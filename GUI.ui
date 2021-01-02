@@ -8,7 +8,7 @@
     <x>0</x>
     <y>0</y>
     <width>461</width>
-    <height>488</height>
+    <height>479</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -28,100 +28,15 @@
   <property name="styleSheet">
    <string notr="true"/>
   </property>
+  <property name="toolButtonStyle">
+   <enum>Qt::ToolButtonIconOnly</enum>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_5">
-    <item row="3" column="0" colspan="3">
-     <widget class="QGroupBox" name="GB_Misc">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
-      <property name="font">
-       <font>
-        <family>Calibri</family>
-        <pointsize>12</pointsize>
-        <weight>75</weight>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="title">
-       <string>MISCELLANEOUS</string>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_4">
-       <item row="0" column="0">
-        <widget class="QLabel" name="LB_Filename">
-         <property name="font">
-          <font>
-           <family>Calibri</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <italic>false</italic>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Filename Extra</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QLineEdit" name="LE_Filename">
-         <property name="font">
-          <font>
-           <family>Calibri</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="toolTip">
-          <string>Will get added to the end of the file name</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="LB_Email">
-         <property name="font">
-          <font>
-           <family>Calibri</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <italic>false</italic>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Email ID(s)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QLineEdit" name="LE_Email">
-         <property name="font">
-          <font>
-           <family>Calibri</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="toolTip">
-          <string>Add comma (,) after each email address for multiple emails</string>
-         </property>
-         <property name="text">
-          <string>vseshadri@sharkninja.com</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
     <item row="2" column="0" colspan="3">
      <widget class="QGroupBox" name="GB_TestParam">
       <property name="enabled">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
       <property name="font">
        <font>
@@ -382,23 +297,6 @@
          <property name="minimum">
           <double>1.000000000000000</double>
          </property>
-        </widget>
-       </item>
-       <item row="1" column="7" colspan="2">
-        <widget class="QComboBox" name="CB_SKU">
-         <property name="font">
-          <font>
-           <family>Calibri</family>
-           <pointsize>12</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <item>
-          <property name="text">
-           <string>CFPxxx</string>
-          </property>
-         </item>
         </widget>
        </item>
        <item row="4" column="0" colspan="2">
@@ -743,20 +641,6 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="6">
-        <widget class="QLabel" name="LB_SKU">
-         <property name="font">
-          <font>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>SKU</string>
-         </property>
-        </widget>
-       </item>
        <item row="3" column="7" colspan="2">
         <widget class="QDoubleSpinBox" name="DSB_CycleCount">
          <property name="font">
@@ -831,6 +715,94 @@
       </layout>
      </widget>
     </item>
+    <item row="3" column="0" colspan="3">
+     <widget class="QGroupBox" name="GB_Misc">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="font">
+       <font>
+        <family>Calibri</family>
+        <pointsize>12</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="title">
+       <string>MISCELLANEOUS</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_4">
+       <item row="0" column="0">
+        <widget class="QLabel" name="LB_Filename">
+         <property name="font">
+          <font>
+           <family>Calibri</family>
+           <pointsize>11</pointsize>
+           <weight>50</weight>
+           <italic>false</italic>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Filename Extra</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLineEdit" name="LE_Filename">
+         <property name="font">
+          <font>
+           <family>Calibri</family>
+           <pointsize>11</pointsize>
+           <weight>50</weight>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="toolTip">
+          <string>Will get added to the end of the file name</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="LB_Email">
+         <property name="font">
+          <font>
+           <family>Calibri</family>
+           <pointsize>11</pointsize>
+           <weight>50</weight>
+           <italic>false</italic>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Email ID(s)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLineEdit" name="LE_Email">
+         <property name="font">
+          <font>
+           <family>Calibri</family>
+           <pointsize>11</pointsize>
+           <weight>50</weight>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="toolTip">
+          <string>Add comma (,) after each email address for multiple emails</string>
+         </property>
+         <property name="text">
+          <string>vseshadri@sharkninja.com</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
     <item row="0" column="0" colspan="3">
      <widget class="QGroupBox" name="GB_Serial">
       <property name="font">
@@ -845,10 +817,53 @@
        <string>SERIAL PORTS</string>
       </property>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="0">
-        <widget class="QLabel" name="LB_ArduinoPort">
+       <item row="3" column="2">
+        <widget class="QPushButton" name="PB_Unit_Connect">
          <property name="font">
           <font>
+           <pointsize>16</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Connect</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>icon/connect.png</normaloff>
+           <normalon>icon/disconnect.png</normalon>
+           <selectedoff>icon/connect.png</selectedoff>
+           <selectedon>icon/disconnect.png</selectedon>icon/connect.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>30</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLineEdit" name="LE_Unit_Port">
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+           <weight>50</weight>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>/dev/unit</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="LB_ScalePort">
+         <property name="font">
+          <font>
+           <family>Calibri</family>
            <pointsize>11</pointsize>
            <weight>50</weight>
            <italic>false</italic>
@@ -856,7 +871,49 @@
           </font>
          </property>
          <property name="text">
-          <string>Arduino Port</string>
+          <string>Scale Port</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="2">
+        <widget class="QPushButton" name="PB_Scale_Connect">
+         <property name="font">
+          <font>
+           <pointsize>16</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Connect</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>icon/connect.png</normaloff>
+           <normalon>icon/disconnect.png</normalon>
+           <selectedoff>icon/connect.png</selectedoff>
+           <selectedon>icon/disconnect.png</selectedon>icon/connect.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>30</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QLineEdit" name="LE_Scale_Port">
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+           <weight>50</weight>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>/dev/scale</string>
          </property>
         </widget>
        </item>
@@ -875,27 +932,11 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="2">
-        <widget class="QPushButton" name="PB_Arduino_Connect">
-         <property name="font">
-          <font>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Connect</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
+       <item row="3" column="0">
         <widget class="QLabel" name="LB_UnitPort">
          <property name="font">
           <font>
+           <family>Calibri</family>
            <pointsize>11</pointsize>
            <weight>50</weight>
            <italic>false</italic>
@@ -907,31 +948,47 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
-        <widget class="QLineEdit" name="LE_Unit_Port">
+       <item row="0" column="0">
+        <widget class="QLabel" name="LB_ArduinoPort">
          <property name="font">
           <font>
+           <family>Calibri</family>
            <pointsize>11</pointsize>
            <weight>50</weight>
+           <italic>false</italic>
            <bold>false</bold>
           </font>
          </property>
          <property name="text">
-          <string>/dev/unit</string>
+          <string>Arduino Port</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="2">
-        <widget class="QPushButton" name="PB_Unit_Connect">
+       <item row="0" column="2">
+        <widget class="QPushButton" name="PB_Arduino_Connect">
          <property name="font">
           <font>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
+           <pointsize>16</pointsize>
           </font>
          </property>
          <property name="text">
           <string>Connect</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>icon/connect.png</normaloff>
+           <normalon>icon/disconnect.png</normalon>
+           <selectedoff>icon/connect.png</selectedoff>
+           <selectedon>icon/disconnect.png</selectedon>icon/connect.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>30</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="shortcut">
+          <string notr="true"/>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -939,49 +996,35 @@
         </widget>
        </item>
        <item row="2" column="0">
-        <widget class="QLabel" name="LB_ScalePort">
+        <widget class="QLabel" name="LB_SKU">
          <property name="font">
           <font>
-           <family>Calibri</family>
            <pointsize>11</pointsize>
            <weight>50</weight>
+           <italic>false</italic>
            <bold>false</bold>
           </font>
          </property>
          <property name="text">
-          <string>Scale Port</string>
+          <string>SKU</string>
          </property>
         </widget>
        </item>
        <item row="2" column="1">
-        <widget class="QLineEdit" name="LE_Scale_Port">
+        <widget class="QComboBox" name="CB_SKU">
          <property name="font">
           <font>
-           <pointsize>11</pointsize>
+           <family>Calibri</family>
+           <pointsize>12</pointsize>
            <weight>50</weight>
            <bold>false</bold>
           </font>
          </property>
-         <property name="text">
-          <string>/dev/scale</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="2">
-        <widget class="QPushButton" name="PB_Scale_Connect">
-         <property name="font">
-          <font>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Connect</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
+         <item>
+          <property name="text">
+           <string>CFPxxx</string>
+          </property>
+         </item>
         </widget>
        </item>
       </layout>
@@ -990,7 +1033,7 @@
     <item row="1" column="0" colspan="3">
      <widget class="QGroupBox" name="GB_Aux">
       <property name="enabled">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
       <property name="font">
        <font>
@@ -1000,21 +1043,27 @@
         <bold>true</bold>
        </font>
       </property>
+      <property name="styleSheet">
+       <string notr="true"/>
+      </property>
       <property name="title">
        <string>AUX FUNCTIONS</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
-       <item row="0" column="0">
-        <widget class="QPushButton" name="PB_VesselFans">
-         <property name="enabled">
-          <bool>true</bool>
+       <item row="1" column="0">
+        <widget class="QPushButton" name="PB_UnitFans">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
          </property>
          <property name="font">
           <font>
            <family>Calibri</family>
-           <pointsize>12</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
+           <pointsize>14</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
           </font>
          </property>
          <property name="cursor">
@@ -1024,7 +1073,63 @@
           <string notr="true"/>
          </property>
          <property name="text">
-          <string>Vessel Fans: Off</string>
+          <string>  Unit Fans</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>icon/switch-off.png</normaloff>
+           <normalon>icon/switch-on.png</normalon>
+           <selectedoff>icon/switch-off.png</selectedoff>
+           <selectedon>icon/switch-on.png</selectedon>icon/switch-off.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>50</width>
+           <height>50</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QPushButton" name="PB_VesselFans">
+         <property name="font">
+          <font>
+           <family>Calibri</family>
+           <pointsize>14</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
+         <property name="text">
+          <string>  Vessel Fans</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>icon/switch-off.png</normaloff>
+           <normalon>icon/switch-on.png</normalon>
+           <selectedoff>icon/switch-off.png</selectedoff>
+           <selectedon>icon/switch-on.png</selectedon>icon/switch-off.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>50</width>
+           <height>50</height>
+          </size>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -1036,42 +1141,18 @@
           <bool>false</bool>
          </property>
          <property name="flat">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QPushButton" name="PB_UnitFans">
-         <property name="font">
-          <font>
-           <family>Calibri</family>
-           <pointsize>12</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="cursor">
-          <cursorShape>PointingHandCursor</cursorShape>
-         </property>
-         <property name="styleSheet">
-          <string notr="true"/>
-         </property>
-         <property name="text">
-          <string>Unit Fans: Off</string>
-         </property>
-         <property name="checkable">
           <bool>true</bool>
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
+       <item row="3" column="1">
         <widget class="QPushButton" name="PB_VesselDrain">
          <property name="font">
           <font>
            <family>Calibri</family>
-           <pointsize>12</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
+           <pointsize>14</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
           </font>
          </property>
          <property name="cursor">
@@ -1081,21 +1162,37 @@
           <string notr="true"/>
          </property>
          <property name="text">
-          <string>Vessel Drain: Off</string>
+          <string>  Vessel Drain</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>icon/switch-off.png</normaloff>
+           <normalon>icon/switch-on.png</normalon>
+           <selectedoff>icon/switch-off.png</selectedoff>
+           <selectedon>icon/switch-on.png</selectedon>icon/switch-off.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>50</width>
+           <height>50</height>
+          </size>
          </property>
          <property name="checkable">
           <bool>true</bool>
          </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
-       <item row="1" column="1">
+       <item row="3" column="0">
         <widget class="QPushButton" name="PB_ReservoirDrain">
          <property name="font">
           <font>
            <family>Calibri</family>
-           <pointsize>12</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
+           <pointsize>14</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
           </font>
          </property>
          <property name="cursor">
@@ -1105,9 +1202,25 @@
           <string notr="true"/>
          </property>
          <property name="text">
-          <string>Reservoir Drain: Off</string>
+          <string>  Reservoir Drain</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>icon/switch-off.png</normaloff>
+           <normalon>icon/switch-on.png</normalon>
+           <selectedoff>icon/switch-off.png</selectedoff>
+           <selectedon>icon/switch-on.png</selectedon>icon/switch-off.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>50</width>
+           <height>50</height>
+          </size>
          </property>
          <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="flat">
           <bool>true</bool>
          </property>
         </widget>
@@ -1115,8 +1228,20 @@
       </layout>
      </widget>
     </item>
+    <item row="4" column="0">
+     <widget class="QLabel" name="LB_Copyright">
+      <property name="font">
+       <font>
+        <pointsize>9</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>   © Ninja Testing</string>
+      </property>
+     </widget>
+    </item>
     <item row="4" column="2">
-     <widget class="QPushButton" name="PB_End">
+     <widget class="QPushButton" name="PB_Quit">
       <property name="enabled">
        <bool>true</bool>
       </property>
@@ -1128,8 +1253,8 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>30</width>
-        <height>30</height>
+        <width>20</width>
+        <height>50</height>
        </size>
       </property>
       <property name="font">
@@ -1140,15 +1265,44 @@
         <bold>true</bold>
        </font>
       </property>
+      <property name="cursor">
+       <cursorShape>PointingHandCursor</cursorShape>
+      </property>
+      <property name="toolTip">
+       <string>Quit</string>
+      </property>
       <property name="text">
-       <string>End</string>
+       <string/>
+      </property>
+      <property name="icon">
+       <iconset>
+        <normaloff>icon/quit.png</normaloff>
+        <selectedoff>icon/quit.png</selectedoff>icon/quit.png</iconset>
+      </property>
+      <property name="iconSize">
+       <size>
+        <width>50</width>
+        <height>70</height>
+       </size>
+      </property>
+      <property name="checkable">
+       <bool>false</bool>
+      </property>
+      <property name="autoDefault">
+       <bool>false</bool>
+      </property>
+      <property name="default">
+       <bool>false</bool>
+      </property>
+      <property name="flat">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
     <item row="4" column="1">
-     <widget class="QPushButton" name="PB_Start">
+     <widget class="QPushButton" name="PB_Start_Stop">
       <property name="enabled">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
       <property name="sizePolicy">
        <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
@@ -1158,8 +1312,8 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>0</width>
-        <height>30</height>
+        <width>20</width>
+        <height>50</height>
        </size>
       </property>
       <property name="font">
@@ -1170,20 +1324,28 @@
         <bold>true</bold>
        </font>
       </property>
-      <property name="text">
-       <string>Start</string>
+      <property name="cursor">
+       <cursorShape>PointingHandCursor</cursorShape>
       </property>
-     </widget>
-    </item>
-    <item row="4" column="0">
-     <widget class="QLabel" name="LB_Copyright">
-      <property name="font">
-       <font>
-        <pointsize>9</pointsize>
-       </font>
+      <property name="toolTip">
+       <string>Start/Stop</string>
       </property>
       <property name="text">
-       <string>© Ninja Testing</string>
+       <string/>
+      </property>
+      <property name="icon">
+       <iconset>
+        <normaloff>icon/play.png</normaloff>
+        <normalon>icon/stop.png</normalon>icon/play.png</iconset>
+      </property>
+      <property name="iconSize">
+       <size>
+        <width>50</width>
+        <height>70</height>
+       </size>
+      </property>
+      <property name="flat">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
@@ -1191,9 +1353,9 @@
    <zorder>GB_Aux</zorder>
    <zorder>GB_Serial</zorder>
    <zorder>GB_TestParam</zorder>
-   <zorder>PB_End</zorder>
+   <zorder>PB_Quit</zorder>
    <zorder>GB_Misc</zorder>
-   <zorder>PB_Start</zorder>
+   <zorder>PB_Start_Stop</zorder>
    <zorder>LB_Copyright</zorder>
   </widget>
  </widget>
