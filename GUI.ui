@@ -7,8 +7,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>461</width>
-    <height>479</height>
+    <width>478</width>
+    <height>551</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -36,7 +36,7 @@
     <item row="2" column="0" colspan="3">
      <widget class="QGroupBox" name="GB_TestParam">
       <property name="enabled">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
       <property name="font">
        <font>
@@ -119,26 +119,6 @@
          <property name="styleSheet">
           <string notr="true"/>
          </property>
-         <item>
-          <property name="text">
-           <string>Coffee</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>K-cup</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Hot Water</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Clean</string>
-          </property>
-         </item>
         </widget>
        </item>
        <item row="1" column="3">
@@ -221,61 +201,6 @@
          <property name="styleSheet">
           <string notr="true"/>
          </property>
-         <item>
-          <property name="text">
-           <string>Cup</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Cup XL</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Travel</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Travel XL</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>1/2 Carafe</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>3/4 Carafe</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Carafe</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>6oz.</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>8oz.</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>10oz.</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>12oz.</string>
-          </property>
-         </item>
         </widget>
        </item>
        <item row="1" column="4" colspan="2">
@@ -685,31 +610,6 @@
          <property name="styleSheet">
           <string notr="true"/>
          </property>
-         <item>
-          <property name="text">
-           <string>Classic</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Rich</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Specialty</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Hot</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Very Hot</string>
-          </property>
-         </item>
         </widget>
        </item>
       </layout>
@@ -796,7 +696,7 @@
           <string>Add comma (,) after each email address for multiple emails</string>
          </property>
          <property name="text">
-          <string>vseshadri@sharkninja.com</string>
+          <string>vseshadri@sharkninja.com, helloworld@sharkninja.com</string>
          </property>
         </widget>
        </item>
@@ -993,6 +893,9 @@
          <property name="checkable">
           <bool>true</bool>
          </property>
+         <property name="flat">
+          <bool>false</bool>
+         </property>
         </widget>
        </item>
        <item row="2" column="0">
@@ -1020,11 +923,6 @@
            <bold>false</bold>
           </font>
          </property>
-         <item>
-          <property name="text">
-           <string>CFPxxx</string>
-          </property>
-         </item>
         </widget>
        </item>
       </layout>
