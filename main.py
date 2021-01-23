@@ -15,6 +15,7 @@ import logging
 import time
 import datetime
 import re
+import csv
 
 # GUI
 from PyQt5 import QtWidgets, QtCore, QtGui, uic
@@ -120,19 +121,10 @@ class ArduinoComm:
     UNIT_FANS_OFF = "F"
     VESSEL_FANS_ON = "G"
     VESSEL_FANS_OFF = "H"
-
-    FLOAT_SWITCH_INFO = "J"
-    READ_CURRENT = "K"
-    READ_AMBIENT = "L"
-    READ_VESSEL_RTD = "M"
-    READ_RTDS = "N"
-    READ_PRESSURE = "O"
-    PRINT_DATA = "P"
-    PRINT_DATA_OFF = "Q"
-    REFILL_RESERVOIR = "R"
-    MAINTAIN_RESERVOIR = "S"
-    MAINTAIN_RESERVOIR_OFF = "T"
     STOP_ALL = "X"
+
+    def send_command(self):
+        arduino_ser.write(STOP_ALL)
 
 
 # Aux functions - Unit and vessel cooling fans, Vessel Drain pump
@@ -189,8 +181,14 @@ class AuxFunctions:
         print(match)
 
         if match is not None:
-            print(match.group(3) + match.group(4))
+            # print(match.group(3) + match.group(4))
             brew_weight = match.group(3) + match.group(4)
+            print(brew_weight)
+
+
+#CFP communication
+class CFPComm:
+    RESERVOIR_PUMP_ON = "A"
 
 
 # GUI
@@ -341,7 +339,7 @@ class MainWindow(QtWidgets.QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Error", str(e))
                 logging.exception("Exception occurred", exc_info=True)
-
+                email_Send(e)
 
         else:
             try:
@@ -419,7 +417,7 @@ class MainWindow(QtWidgets.QMainWindow):
             os.makedirs(subfile_dir)
 
         # data file name
-        filename = "Unit{}_{}_{}_{}_Brew{}.xlsx".format(str(int((self.ui.DSB_Unit.value()))),
+        filename = "Unit{}_{}_{}_{}_Brew{}.csv".format(str(int((self.ui.DSB_Unit.value()))),
                                                         self.ui.CB_Mode.currentText(),
                                                         self.ui.CB_Size.currentText(), self.ui.CB_Style.currentText(),
                                                         current_cycle)
@@ -455,11 +453,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         logging.info(test_param)
 
+    def start_brew(self):
+        print("Brew Started")
+
+    def end_brew(self):
+        print("Brew Ended")
 
 # email
-def email_send(email_message):
-    global receiver_email
-
+def email_Send(email_message):
     try:
         port = 465  # For SSL
         smtp_server = "smtp.gmail.com"
@@ -467,12 +468,14 @@ def email_send(email_message):
         password = '$#!N*&!0'
 
         message = email_message
-
+        print("1")
         context = ssl.create_default_context()
+        print("2")
         with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
             server.login(sender_email, password)
             for i in range(0, len(receiver_email)):
                 server.sendmail(sender_email, receiver_email[i], message)
+                print(receiver_email[i])
     except KeyboardInterrupt:
         print("1. Program Stopped - Keyboard Interrupt")
         sys.exit(1)
