@@ -9,7 +9,6 @@ December 4, 2020
 """
 import os
 import sys
-import GUI
 import serial
 import logging
 import time
@@ -49,9 +48,17 @@ max_brew_time = 10  # in minutes
 filename_extra = " "
 receiver_email = []
 
-SKU_list = ['CFP300', 'CM400']
-Mode_list = ['Coffee', 'K-Cup', 'Hot Water', 'Clean']
-Style_list = ['Classic', 'Rich', 'Over Ice', 'Specialty', 'Hot', 'Very Hot']
+# file manager
+file_dir = ' '
+subfile_dir = ' '
+filename = ' '
+data_dir = ' '
+
+SKU_list = ['CFP300', 'CM400', 'CP300']
+Build_list = ['P0', 'P1', 'P2', 'P3', 'P4', 'EB0', 'EB1', 'EB2', 'MP']
+Mode_list = ['Coffee', 'K-Cup', 'Hot Water', 'Clean', 'Tea']
+Style_list = ['Classic', 'Rich', 'Over Ice', 'Specialty', 'Hot', 'Very Hot', 'Herbal', 'Black', 'Oolong', 'White',
+              'Green']
 Size_list = ['Cup', 'Cup XL', 'Travel', 'Travel XL', '1/2 Carafe', '3/4 carafe', 'Full Carafe', '6oz', '8oz', '10z',
              '12oz']
 
@@ -76,6 +83,7 @@ vessel_drain_flag = 0  # vessel drain pump off
 arduino_connect_flag = 0  # Arduino disconnected
 unit_connect_flag = 0  # Unit disconnected
 scale_connect_flag = 0  # Scale disconnected
+start_stop_flag = 0  # Stopped
 
 
 # Styling
@@ -111,7 +119,7 @@ class Styling:
 
 
 # Arduino communication
-class ArduinoComm:
+class ArduinoComm(object):
     # Commands - Output
     RESERVOIR_PUMP_ON = "A"
     RESERVOIR_PUMP_OFF = "B"
@@ -122,6 +130,29 @@ class ArduinoComm:
     VESSEL_FANS_ON = "G"
     VESSEL_FANS_OFF = "H"
     STOP_ALL = "X"
+
+    def __init__(self):
+        self.threadpool = QtCore.QThreadPool()
+        self.do_init = QtCore.QEvent.registerEventType()
+
+    def pre_brew(self):
+        # This function checks for all water float status (Reservoir, Vessel and Drain drum), power and scale weight
+        try:
+            # arduino_ser.open()
+            # scale_ser.open()
+
+            t_end = time.time() + 5  # 30 seconds
+
+            while time.time() < t_end:
+                # arduino_read_serial = arduino_ser.readline()
+                # scale_read_serial = scale_ser.readline()
+                # print(read_serial)
+                print(time.time())
+            logging.info("Pre-brew process has begun")
+
+        except Exception as e:
+            logging.exception("Exception occurred", exc_info=True)
+            email_Send(e)
 
     def send_command(self):
         arduino_ser.write(STOP_ALL)
@@ -174,11 +205,9 @@ class AuxFunctions:
         scale_output = scale_ser.readline()
         scale_output.strip()
         y = scale_output.decode("utf-8", "replace")
-        print(y)
         scale_pattern = r"([\w]+)(,)([\+|-])([\d\.]+)(\s+)([\w]+)"
 
         match = re.match(scale_pattern, y)
-        print(match)
 
         if match is not None:
             # print(match.group(3) + match.group(4))
@@ -186,7 +215,7 @@ class AuxFunctions:
             print(brew_weight)
 
 
-#CFP communication
+# CFP communication
 class CFPComm:
     RESERVOIR_PUMP_ON = "A"
 
@@ -194,7 +223,8 @@ class CFPComm:
 # GUI
 class MainWindow(QtWidgets.QMainWindow):
     global station, unit, mode, size, style, macro, start_cycle, current_cycle, number_of_cycles, auto_shutoff_temp, \
-        boiler_cool_temp, vessel_cool_temp, cool_time, max_brew_time, filename_extra, test_param, receiver_email
+        boiler_cool_temp, vessel_cool_temp, cool_time, max_brew_time, filename_extra, test_param, receiver_email, \
+        file_dir, data_dir, subfile_dir, filename
 
     def __init__(self):
         self.threadpool = QtCore.QThreadPool()
@@ -214,6 +244,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # adds initial Text into SKU combobox
         self.ui.CB_SKU.clear()
         self.ui.CB_SKU.addItems(SKU_list)
+        self.ui.CB_Build.clear()
+        self.ui.CB_Build.addItems(Build_list)
 
         self.ui.DSB_Station.valueChanged.connect(self.file_manager)
 
@@ -222,7 +254,7 @@ class MainWindow(QtWidgets.QMainWindow):
         quit_action.setShortcuts(['Ctrl+Q', 'Ctrl+W'])
         quit_action.triggered.connect(QtWidgets.qApp.closeAllWindows)
         self.addAction(quit_action)
-        self.ui.PB_Quit.clicked.connect(QtWidgets.qApp.closeAllWindows)
+        self.ui.PB_Quit.clicked.connect(self.quit)
 
         # Push button styling
         self.ui.PB_UnitFans.setStyleSheet(Styling.aux_button)
@@ -245,6 +277,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.PB_Unit_Connect.clicked.connect(self.unit_connect)
         self.ui.PB_Scale_Connect.clicked.connect(self.scale_connect)
 
+        # Start and Stop buttons
+        self.ui.PB_Start_Stop.setEnabled(True)
+        self.ui.PB_Start_Stop.clicked.connect(self.start_end_brew)
+
         icon = QtGui.QIcon()
         icon2 = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("icon/connect.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -253,26 +289,29 @@ class MainWindow(QtWidgets.QMainWindow):
         icon2.addPixmap(QtGui.QPixmap("icon/disconnect.png"), QtGui.QIcon.Selected, QtGui.QIcon.On)
 
     def update_mode_combo(self):
-        print("Mode update")
         self.ui.CB_Mode.clear()
-        print(self.ui.CB_SKU.currentText())
         if self.ui.CB_SKU.currentText() == 'CFP300':  # CFP300
-            self.ui.CB_Mode.addItems(Mode_list)
+            self.ui.CB_Mode.addItems(Mode_list[0:4])
         if self.ui.CB_SKU.currentText() == "CM400":  # CM400
             self.ui.CB_Mode.addItems([Mode_list[0], Mode_list[3]])
+        if self.ui.CB_SKU.currentText() == "CP300":  # CP300
+            self.ui.CB_Mode.addItems([Mode_list[0], Mode_list[4], Mode_list[3]])
+
         else:
             pass
 
     def update_size_combo(self):
-        print("Size update")
         self.ui.CB_Size.clear()
 
         if self.ui.CB_Mode.currentText() == 'Coffee':
             if self.ui.CB_SKU.currentText() == 'CFP300':
                 self.ui.CB_Size.addItems(Size_list[0:7])
-            if self.ui.CB_SKU.currentText() == 'CM400':
+            if self.ui.CB_SKU.currentText() == 'CM400' or 'CP300':
                 self.ui.CB_Size.addItems(Size_list[0:5])
                 self.ui.CB_Size.addItem(Size_list[6])
+        if self.ui.CB_Mode.currentText() == 'Tea':
+            self.ui.CB_Size.addItems(Size_list[0:5])
+            self.ui.CB_Size.addItem(Size_list[6])
         if self.ui.CB_Mode.currentText() == 'K-Cup':
             self.ui.CB_Size.addItems(Size_list[7:11])
         if self.ui.CB_Mode.currentText() == 'Hot Water':
@@ -281,7 +320,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.CB_Size.addItem(Size_list[6])
 
     def update_style_combo(self):
-        print("Style update")
         self.ui.CB_Style.clear()
 
         # CFP300
@@ -314,6 +352,19 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     self.ui.CB_Style.addItems(Style_list[0:3])
 
+        if self.ui.CB_SKU.currentText() == 'CP300':
+            # Coffee
+            if self.ui.CB_Mode.currentText() == 'Coffee':
+                if self.ui.CB_Size.currentText() == Size_list[0]:
+                    self.ui.CB_Style.addItems(Style_list[0:4])
+
+                else:
+                    self.ui.CB_Style.addItems(Style_list[0:3])
+
+            # Tea
+            if self.ui.CB_Mode.currentText() == 'Tea':
+                self.ui.CB_Style.addItems(Style_list[6:11])
+
         # Clean
         if self.ui.CB_Mode.currentText() == 'Clean':
             self.ui.CB_Style.clear()
@@ -325,31 +376,31 @@ class MainWindow(QtWidgets.QMainWindow):
         if arduino_connect_flag == 0:
             try:
                 # serial communication between Pi and Arduino
-                arduino_ser = serial.Serial(self.ui.LE_Arduino_Port.text(), 9600)
-                arduino_ser.open()
-                read_serial = arduino_ser.readline()
-                print(read_serial)
+                # arduino_ser = serial.Serial(self.ui.LE_Arduino_Port.text(), 9600)
+                # arduino_ser.open()
+                # read_serial = arduino_ser.readline()
+                # print(read_serial)
+                logging.info('Arduino Connected: Port ' + self.ui.LE_Arduino_Port.text())
                 self.ui.PB_Arduino_Connect.setText("Disconnect")
-                self.ui.PB_Arduino_Connect.setStyleSheet(disconnect_button)
-                logging.info('Arduino Connected')
+                self.ui.PB_Arduino_Connect.setStyleSheet(Styling.disconnect_button)
                 arduino_connect_flag = 1
                 self.ui.GB_Aux.setEnabled(True)
                 self.ui.PB_ReservoirDrain.setEnabled(False)
 
             except Exception as e:
+                self.ui.PB_Arduino_Connect.setCheckable(False)
                 QMessageBox.critical(self, "Error", str(e))
                 logging.exception("Exception occurred", exc_info=True)
                 email_Send(e)
 
         else:
             try:
+                logging.info('Arduino Disconnected: Port ' + self.ui.LE_Arduino_Port.text())
                 self.ui.PB_Arduino_Connect.setText("Connect")
-                self.PB_Unit_Connect.setIcon(icon2)
-                self.ui.PB_Arduino_Connect.setStyleSheet(connect_button)
-                logging.info('Arduino Disconnected')
+                self.ui.PB_Arduino_Connect.setStyleSheet(Styling.connect_button)
                 arduino_connect_flag = 0
                 self.ui.GB_Aux.setEnabled(False)
-                arduino_ser.close()
+                # arduino_ser.close()
 
             except Exception as e:
                 QMessageBox.critical(self, "Error", str(e))
@@ -417,15 +468,16 @@ class MainWindow(QtWidgets.QMainWindow):
             os.makedirs(subfile_dir)
 
         # data file name
-        filename = "Unit{}_{}_{}_{}_Brew{}.csv".format(str(int((self.ui.DSB_Unit.value()))),
-                                                        self.ui.CB_Mode.currentText(),
-                                                        self.ui.CB_Size.currentText(), self.ui.CB_Style.currentText(),
-                                                        current_cycle)
+        filename = subfile_dir + '\\' + "Unit{}_{}_{}_{}_Brew{}.csv".format(str(int((self.ui.DSB_Unit.value()))),
+                                                                            self.ui.CB_Mode.currentText(),
+                                                                            self.ui.CB_Size.currentText(),
+                                                                            self.ui.CB_Style.currentText(),
+                                                                            current_cycle)
 
-        logging.info('Data directory: {}'.format(data_dir))
-        logging.info('File directory: {}'.format(file_dir))
-        logging.info('Sub File directory: {}'.format(subfile_dir))
-        logging.info('Filename: {}'.format(filename))
+        print('Data directory: {}'.format(data_dir))
+        print('File directory: {}'.format(file_dir))
+        print('Sub File directory: {}'.format(subfile_dir))
+        print('Filename: {}'.format(filename))
 
     # Data Import - Get's the initial values from the Test parameters in the GUI
     def test_param_import(self):
@@ -453,11 +505,58 @@ class MainWindow(QtWidgets.QMainWindow):
 
         logging.info(test_param)
 
-    def start_brew(self):
-        print("Brew Started")
+    def start_end_brew(self):
+        global start_stop_flag
 
-    def end_brew(self):
-        print("Brew Ended")
+        if start_stop_flag == 0:
+            self.ui.GB_Serial.setEnabled(False)
+            self.ui.GB_TestParam.setEnabled(False)
+            self.ui.GB_Aux.setEnabled(False)
+            self.ui.GB_Misc.setEnabled(False)
+            a = ArduinoComm()
+            a.pre_brew()
+
+            logging.info('Brew {} Started'.format(current_cycle))
+            start_stop_flag = 1
+
+        else:
+            logging.info('Brew {} Ended'.format(current_cycle))
+            self.ui.GB_Serial.setEnabled(True)
+            self.ui.GB_TestParam.setEnabled(True)
+            self.ui.GB_Aux.setEnabled(True)
+            self.ui.GB_Misc.setEnabled(True)
+            start_stop_flag = 0
+
+    def quit(self):
+        logging.info('Application closed')
+        # Stop everything
+        QtWidgets.qApp.closeAllWindows()
+
+
+# datalogging
+def logData(data):
+    global filename
+    try:
+        data = data.split(',')
+        if path.exists(filename):
+            with open(filename, 'a', newline='') as csvfile:
+                filewriter = csv.writer(csvfile, delimiter=',',
+                                        quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                filewriter.writerow(data)
+
+        else:
+            # Create and append
+            with open(filename, 'w', newline='') as csvfile:
+                filewriter = csv.writer(csvfile, delimiter=',',
+                                        quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                filewriter.writerow(['Time', 'Boiler temp.', 'Outlet temp.', 'PTC temp.', 'Flow rate', '1 cup temp',
+                                     '3 cup temp', '5 cup temp', '7 cup temp', 'Brew weight', 'Error code'])
+                filewriter.writerow(data)
+
+    except Exception as e:
+        logging.exception("Exception occurred", exc_info=True)
+        QMessageBox.critical(self, "Error", str(e))
+
 
 # email
 def email_Send(email_message):
@@ -468,9 +567,7 @@ def email_Send(email_message):
         password = '$#!N*&!0'
 
         message = email_message
-        print("1")
         context = ssl.create_default_context()
-        print("2")
         with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
             server.login(sender_email, password)
             for i in range(0, len(receiver_email)):
