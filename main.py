@@ -53,6 +53,10 @@ file_dir = ' '
 subfile_dir = ' '
 filename = ' '
 data_dir = ' '
+summary_file = ' '
+
+raw_data = ' '
+summary_data = ' '
 
 SKU_list = ['CFP300', 'CM400', 'CP300']
 Build_list = ['P0', 'P1', 'P2', 'P3', 'P4', 'EB0', 'EB1', 'EB2', 'MP']
@@ -222,11 +226,12 @@ class CFPComm:
 
 # GUI
 class MainWindow(QtWidgets.QMainWindow):
-    global station, unit, mode, size, style, macro, start_cycle, current_cycle, number_of_cycles, auto_shutoff_temp, \
-        boiler_cool_temp, vessel_cool_temp, cool_time, max_brew_time, filename_extra, test_param, receiver_email, \
-        file_dir, data_dir, subfile_dir, filename
+    global station, unit, mode, size, style, macro, start_cycle, current_cycle, number_of_cycles, \
+        auto_shutoff_temp, boiler_cool_temp, vessel_cool_temp, cool_time, max_brew_time, filename_extra, \
+        test_param, receiver_email, file_dir, data_dir, subfile_dir, filename, summary_file
 
     def __init__(self):
+
         self.threadpool = QtCore.QThreadPool()
         self.do_init = QtCore.QEvent.registerEventType()
         QtWidgets.QMainWindow.__init__(self)
@@ -240,6 +245,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.CB_SKU.currentIndexChanged.connect(self.update_mode_combo)
         self.ui.CB_Mode.currentIndexChanged.connect(self.update_size_combo)
         self.ui.CB_Size.currentIndexChanged.connect(self.update_style_combo)
+        self.ui.CB_Style.currentIndexChanged.connect(self.update_kcup_size_combo)
 
         # adds initial Text into SKU combobox
         self.ui.CB_SKU.clear()
@@ -291,33 +297,44 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_mode_combo(self):
         self.ui.CB_Mode.clear()
         if self.ui.CB_SKU.currentText() == 'CFP300':  # CFP300
-            self.ui.CB_Mode.addItems(Mode_list[0:4])
-        if self.ui.CB_SKU.currentText() == "CM400":  # CM400
-            self.ui.CB_Mode.addItems([Mode_list[0], Mode_list[3]])
-        if self.ui.CB_SKU.currentText() == "CP300":  # CP300
-            self.ui.CB_Mode.addItems([Mode_list[0], Mode_list[4], Mode_list[3]])
-
-        else:
-            pass
+            self.ui.CB_Mode.addItems(['Coffee', 'K-Cup', 'Hot Water', 'Clean'])
+        elif self.ui.CB_SKU.currentText() == "CM400":  # CM400
+            self.ui.CB_Mode.addItems(['Coffee', 'Clean'])
+        elif self.ui.CB_SKU.currentText() == "CP300":  # CP300
+            self.ui.CB_Mode.addItems(['Coffee', 'Tea', 'Clean'])
 
     def update_size_combo(self):
         self.ui.CB_Size.clear()
 
         if self.ui.CB_Mode.currentText() == 'Coffee':
             if self.ui.CB_SKU.currentText() == 'CFP300':
-                self.ui.CB_Size.addItems(Size_list[0:7])
-            if self.ui.CB_SKU.currentText() == 'CM400' or 'CP300':
-                self.ui.CB_Size.addItems(Size_list[0:5])
-                self.ui.CB_Size.addItem(Size_list[6])
-        if self.ui.CB_Mode.currentText() == 'Tea':
-            self.ui.CB_Size.addItems(Size_list[0:5])
-            self.ui.CB_Size.addItem(Size_list[6])
+                self.ui.CB_Size.addItems(
+                    ['Cup', 'Cup XL', 'Travel', 'Travel XL', '1/2 Carafe', '3/4 Carafe', 'Full Carafe'])
+            elif self.ui.CB_SKU.currentText() == 'CM400' or 'CP300':
+                self.ui.CB_Size.addItems(['Cup', 'CupXL', 'Travel', 'Travel XL', '1/2 Carafe', 'Full Carafe'])
+
+        elif self.ui.CB_Mode.currentText() == 'Tea':
+            self.ui.CB_Size.addItems(['Cup', 'CupXL', 'Travel', 'Travel XL', '1/2 Carafe', 'Full Carafe'])
+
+        elif self.ui.CB_Mode.currentText() == 'K-Cup':
+            self.ui.CB_Size.addItems(['6oz', '8oz', '10oz', '12oz'])
+
+        elif self.ui.CB_Mode.currentText() == 'Hot Water':
+            self.ui.CB_Size.addItems(
+                ['Cup', 'Cup XL', 'Travel', 'Travel XL', '1/2 Carafe', '3/4 Carafe', 'Full Carafe'])
+
+        elif self.ui.CB_Mode.currentText() == 'Clean':
+            self.ui.CB_Size.addItem('Full Carafe')
+
+    def update_kcup_size_combo(self):
         if self.ui.CB_Mode.currentText() == 'K-Cup':
-            self.ui.CB_Size.addItems(Size_list[7:11])
-        if self.ui.CB_Mode.currentText() == 'Hot Water':
-            self.ui.CB_Size.addItems(Size_list[0:7])
-        if self.ui.CB_Mode.currentText() == 'Clean':
-            self.ui.CB_Size.addItem(Size_list[6])
+
+            if self.ui.CB_Style.currentText() == 'Classic' or 'Over Ice':
+                self.ui.CB_Size.addItems(['6oz', '8oz', '10oz', '12oz'])
+            elif self.ui.CB_Style.currentText() == 'Rich':
+                self.ui.CB_Size.addItems(['5oz', '7oz', '9oz', '11oz'])
+            elif self.ui.CB_Style.currentText() == 'Specialty':
+                self.ui.CB_Size.addItem('4oz')
 
     def update_style_combo(self):
         self.ui.CB_Style.clear()
@@ -327,19 +344,16 @@ class MainWindow(QtWidgets.QMainWindow):
             # Coffee
             if self.ui.CB_Mode.currentText() == 'Coffee':
                 if self.ui.CB_Size.currentText() == 'Cup':
-                    self.ui.CB_Style.addItems(Style_list[0:4])
+                    self.ui.CB_Style.addItems(['Classic', 'Rich', 'Over Ice', 'Specialty'])
                 else:
-                    self.ui.CB_Style.addItems(Style_list[0:3])
+                    self.ui.CB_Style.addItems(['Classic', 'Rich', 'Over Ice'])
 
             # K-Cup
-            if self.ui.CB_Mode.currentText() == 'K-Cup':
-                if self.ui.CB_Size.currentText() == '6oz':
-                    self.ui.CB_Style.addItems(Style_list[0:4])
-                else:
-                    self.ui.CB_Style.addItems(Style_list[0:3])
+            elif self.ui.CB_Mode.currentText() == 'K-Cup':
+                self.ui.CB_Style.addItems(['Classic', 'Rich', 'Over Ice', 'Specialty'])
 
             # Hot Water
-            if self.ui.CB_Mode.currentText() == 'Hot Water':
+            elif self.ui.CB_Mode.currentText() == 'Hot Water':
                 self.ui.CB_Style.addItems(Style_list[4:6])
 
         # CM400
@@ -432,6 +446,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         except Exception:
             logging.exception("Exception occurred", exc_info=True)
+            QMessageBox.critical(self, "Error", str(e))
 
     def scale_connect(self):
         global scale_connect_flag
@@ -450,12 +465,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         except Exception:
             logging.exception("Exception occurred", exc_info=True)
+            QMessageBox.critical(self, "Error", str(e))
 
     # File directory and Filename creation
     def file_manager(self):
         # SKU and station info
-        file_dir = data_dir + '\\' + "{} Station {}".format(self.ui.CB_SKU.currentText(),
-                                                            str(int((self.ui.DSB_Station.value()))))
+        global filename_extra, summary_file, filename
+        file_dir = data_dir + '\\' + "{} {} Station {}".format(self.ui.CB_SKU.currentText(),
+                                                               self.ui.CB_Build.currentText(),
+                                                               str(int((self.ui.DSB_Station.value()))))
 
         if not os.path.exists(file_dir):
             os.makedirs(file_dir)
@@ -467,17 +485,30 @@ class MainWindow(QtWidgets.QMainWindow):
         if not os.path.exists(subfile_dir):
             os.makedirs(subfile_dir)
 
+        # Remove characters that don't follow file naming convention
+        # *Do not use the following characters: /  \: * ? " < > |
+        filename_extra = re.sub(r"([^\w])", "_", filename_extra)
+
+        # summary file name
+        summary_file = file_dir + '\\' + "{}_{}_Station{}_Unit{}_{}.csv".format(self.ui.CB_SKU.currentText(),
+                                                                                self.ui.CB_Build.currentText(), station,
+                                                                                unit, filename_extra)
         # data file name
-        filename = subfile_dir + '\\' + "Unit{}_{}_{}_{}_Brew{}.csv".format(str(int((self.ui.DSB_Unit.value()))),
-                                                                            self.ui.CB_Mode.currentText(),
-                                                                            self.ui.CB_Size.currentText(),
-                                                                            self.ui.CB_Style.currentText(),
-                                                                            current_cycle)
+        filename = subfile_dir + '\\' + "{}_{}_{}_Brew{}_{}.csv".format(self.ui.CB_Mode.currentText(),
+                                                                        self.ui.CB_Size.currentText(),
+                                                                        self.ui.CB_Style.currentText(),
+                                                                        current_cycle, filename_extra)
 
         print('Data directory: {}'.format(data_dir))
         print('File directory: {}'.format(file_dir))
         print('Sub File directory: {}'.format(subfile_dir))
         print('Filename: {}'.format(filename))
+        print('Summary Filename: {}'.format(summary_file))
+        a = DataLogging()
+        b = DataLogging()
+
+        b.summary_file_log("Hello")
+        b.raw_file_log("Hello")
 
     # Data Import - Get's the initial values from the Test parameters in the GUI
     def test_param_import(self):
@@ -497,11 +528,12 @@ class MainWindow(QtWidgets.QMainWindow):
         filename_extra = self.ui.LE_Filename.text()
         receiver_email = self.ui.LE_Email.text().split(",")
 
-        test_param = "Station: {}, Unit: {}, Mode: {}, Size: {}, Style: {}, Macro: {}, Start Cycle: {}, " \
-                     "Current Cycle: {}, Number of cycles: {}, Auto shutoff temp.: {}C, Boiler Cool temp.: {}C, " \
-                     "Vessel Cool temp: {}C, Cool time: {}min., Max Brew time: {}min, Filename Extra: {}" \
-            .format(station, unit, mode, size, style, macro, start_cycle, current_cycle, number_of_cycles,
-                    auto_shutoff_temp, boiler_cool_temp, vessel_cool_temp, cool_time, max_brew_time, filename_extra)
+        test_param = "SKU: {},Build:{},Station:{}, Unit:{}, Mode:{}, Size:{}, Style:{}, Macro:{}, Start Cycle:{}," \
+                     "Current Cycle:{}, Number of cycles:{}, Auto shutoff temp.:{}C, Boiler Cool temp.:{}C, " \
+                     "Vessel Cool temp:{}C, Cool time:{}min., Max Brew time:{}min., Filename Extra:{}" \
+            .format(self.ui.CB_SKU.currentText(), self.ui.CB_Build.currentText(), station, unit, mode, size, style,
+                    macro, start_cycle, current_cycle, number_of_cycles, auto_shutoff_temp, boiler_cool_temp,
+                    vessel_cool_temp, cool_time, max_brew_time, filename_extra)
 
         logging.info(test_param)
 
@@ -533,32 +565,59 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.qApp.closeAllWindows()
 
 
-# datalogging
-def logData(data):
-    global filename
-    try:
-        data = data.split(',')
-        if path.exists(filename):
-            with open(filename, 'a', newline='') as csvfile:
-                filewriter = csv.writer(csvfile, delimiter=',',
-                                        quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                filewriter.writerow(data)
+# Data logging
+class DataLogging(object):
+    def raw_file_log(self, data):
+        global filename, filename_extra
+        try:
+            print(filename)
+            # data = data.split(',')
+            if os.path.exists(filename):
+                with open(filename, 'a', newline='') as csvfile:
+                    filewriter = csv.writer(csvfile, delimiter=',',
+                                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                    filewriter.writerow(data)
 
-        else:
-            # Create and append
-            with open(filename, 'w', newline='') as csvfile:
-                filewriter = csv.writer(csvfile, delimiter=',',
-                                        quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                filewriter.writerow(['Time', 'Boiler temp.', 'Outlet temp.', 'PTC temp.', 'Flow rate', '1 cup temp',
-                                     '3 cup temp', '5 cup temp', '7 cup temp', 'Brew weight', 'Error code'])
-                filewriter.writerow(data)
+            else:
+                # Create and append
+                with open(filename, 'w', newline='') as csvfile:
+                    filewriter = csv.writer(csvfile, delimiter=',',
+                                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                    filewriter.writerow(['Time', 'Boiler temp.', 'Outlet temp.', 'PTC temp.', 'Flow rate', '1 cup temp',
+                                         '3 cup temp', '5 cup temp', '7 cup temp', 'Brew weight', 'Error code'])
+                    filewriter.writerow(data)
 
-    except Exception as e:
-        logging.exception("Exception occurred", exc_info=True)
-        QMessageBox.critical(self, "Error", str(e))
+        except Exception as e:
+            logging.exception("Exception occurred", exc_info=True)
+
+    def summary_file_log(self, data):
+        global summary_file, filename_extra
+        try:
+            print(summary_file)
+            # data = data.split(',')
+            if os.path.exists(summary_file):
+                with open(summary_file, 'a', newline='') as csvfile:
+                    filewriter = csv.writer(csvfile, delimiter=',',
+                                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                    filewriter.writerow(data)
+
+            else:
+                # Create and append
+                with open(summary_file, 'w', newline='') as csvfile:
+                    filewriter = csv.writer(csvfile, delimiter=',',
+                                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                    filewriter.writerow(
+                        ['Brew Start time', 'Brew end time', 'Mode', 'Size', 'Style', 'Macro', 'Brew cycle',
+                         'Max. Boiler temp (degC)', 'Max. Outlet temp (degC)', 'Initial weight (g)', 'Final weight (g)',
+                         'Brew Volume (g)', 'Brew Volume (oz.)', 'Max. Ambient temperature (degC)',
+                         'Max. Ambient humidity'])
+                    filewriter.writerow(data)
+
+        except Exception as e:
+            logging.exception("Exception occurred", exc_info=True)
 
 
-# email
+# Email
 def email_Send(email_message):
     try:
         port = 465  # For SSL

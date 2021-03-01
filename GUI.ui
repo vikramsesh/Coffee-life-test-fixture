@@ -659,7 +659,7 @@
           </font>
          </property>
          <property name="toolTip">
-          <string>Will get added to the end of the file name</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Will get added to the end of the file name. &lt;span style=&quot; font-family:'JetBrains Mono,monospace'; color:#000000;&quot;&gt;*Do not use the following characters: / \: * ? &amp;quot; &amp;lt; &amp;gt; |&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
           <string/>
