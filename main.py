@@ -31,15 +31,15 @@ from email.mime.multipart import MIMEMultipart
 import socket
 
 # GUI defaults
-station = 1
-unit = 1
+station = 0
+unit = 0
 mode = " "
 size = " "
 style = " "
 macro = 0
-start_cycle = 1
+start_cycle = 0
 current_cycle = start_cycle  # current cycle number. Will increment with each brew
-number_of_cycles = 2000
+number_of_cycles = 0
 auto_shutoff_temp = 150  # in degC
 boiler_cool_temp = 35  # in degC
 vessel_cool_temp = 35  # in degC
@@ -58,7 +58,7 @@ summary_file = ' '
 raw_data = ' '
 summary_data = ' '
 
-SKU_list = ['CFP300', 'CM400', 'CP300']
+SKU_list = ['CFP300', 'CFP200', 'CM400', ]
 Build_list = ['P0', 'P1', 'P2', 'P3', 'P4', 'EB0', 'EB1', 'EB2', 'MP']
 Mode_list = ['Coffee', 'K-Cup', 'Hot Water', 'Clean', 'Tea']
 Style_list = ['Classic', 'Rich', 'Over Ice', 'Specialty', 'Hot', 'Very Hot', 'Herbal', 'Black', 'Oolong', 'White',
@@ -74,11 +74,11 @@ arduino_ser = " "
 scale_ser = " "
 unit_ser = " "
 
-test_param = "Station: {}, Unit: {}, Mode: {}, Size: {}, Style: {}, Macro: {}, Start Cycle: {}, " \
-             "Current Cycle: {}, Number of cycles: {}, Auto shutoff temp.: {}C, Boiler Cool temp.: {}C, " \
-             "Vessel Cool temp: {}C, Cool time: {}min., Max Brew time: {}min, Filename Extra: {}" \
-    .format(station, unit, mode, size, style, macro, start_cycle, current_cycle, number_of_cycles,
-            auto_shutoff_temp, boiler_cool_temp, vessel_cool_temp, cool_time, max_brew_time, filename_extra)
+# test_param = "Station: {}, Unit: {}, Mode: {}, Size: {}, Style: {}, Macro: {}, Start Cycle: {}, " \
+#              "Current Cycle: {}, Number of cycles: {}, Auto shutoff temp.: {}C, Boiler Cool temp.: {}C, " \
+#              "Vessel Cool temp: {}C, Cool time: {}min., Max Brew time: {}min, Filename Extra: {}" \
+#     .format(station, unit, mode, size, style, macro, start_cycle, current_cycle, number_of_cycles,
+#             auto_shutoff_temp, boiler_cool_temp, vessel_cool_temp, cool_time, max_brew_time, filename_extra)
 
 # flags
 unit_fan_flag = 0  # unit fans off
@@ -139,17 +139,15 @@ class ArduinoComm(object):
         self.threadpool = QtCore.QThreadPool()
         self.do_init = QtCore.QEvent.registerEventType()
 
-    def pre_brew(self):
-        # This function checks for all water float status (Reservoir, Vessel and Drain drum), power and scale weight
+    def arduino_pre_brew(self):
+        # This function checks for all water float status (Reservoir, Vessel and Drain drum), power
         try:
             # arduino_ser.open()
-            # scale_ser.open()
 
             t_end = time.time() + 5  # 30 seconds
 
             while time.time() < t_end:
                 # arduino_read_serial = arduino_ser.readline()
-                # scale_read_serial = scale_ser.readline()
                 # print(read_serial)
                 print(time.time())
             logging.info("Pre-brew process has begun")
@@ -239,13 +237,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
         self.ui = uic.loadUi(dir_path + "\GUI.ui", self)
-        self.test_param_import()
 
         # update comboBox
         self.ui.CB_SKU.currentIndexChanged.connect(self.update_mode_combo)
-        self.ui.CB_Mode.currentIndexChanged.connect(self.update_size_combo)
-        self.ui.CB_Size.currentIndexChanged.connect(self.update_style_combo)
-        self.ui.CB_Style.currentIndexChanged.connect(self.update_kcup_size_combo)
+        self.ui.CB_Mode.currentIndexChanged.connect(self.update_style_combo)
+        self.ui.CB_Style.currentIndexChanged.connect(self.update_size_combo)
 
         # adds initial Text into SKU combobox
         self.ui.CB_SKU.clear()
@@ -253,7 +249,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.CB_Build.clear()
         self.ui.CB_Build.addItems(Build_list)
 
-        self.ui.DSB_Station.valueChanged.connect(self.file_manager)
+        self.ui.DSB_Station.valueChanged.connect(self.test_param_import)
 
         # Quit button and shortcut
         quit_action = QtWidgets.QAction('Quit', self)
@@ -296,92 +292,100 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_mode_combo(self):
         self.ui.CB_Mode.clear()
-        if self.ui.CB_SKU.currentText() == 'CFP300':  # CFP300
+        if self.ui.CB_SKU.currentText() == "CFP300":
             self.ui.CB_Mode.addItems(['Coffee', 'K-Cup', 'Hot Water', 'Clean'])
+        elif self.ui.CB_SKU.currentText() == "CFP200":  # CP300
+            self.ui.CB_Mode.addItems(['Coffee', 'K-Cup', 'Clean'])
         elif self.ui.CB_SKU.currentText() == "CM400":  # CM400
             self.ui.CB_Mode.addItems(['Coffee', 'Clean'])
-        elif self.ui.CB_SKU.currentText() == "CP300":  # CP300
-            self.ui.CB_Mode.addItems(['Coffee', 'Tea', 'Clean'])
 
-    def update_size_combo(self):
-        self.ui.CB_Size.clear()
-
-        if self.ui.CB_Mode.currentText() == 'Coffee':
-            if self.ui.CB_SKU.currentText() == 'CFP300':
-                self.ui.CB_Size.addItems(
-                    ['Cup', 'Cup XL', 'Travel', 'Travel XL', '1/2 Carafe', '3/4 Carafe', 'Full Carafe'])
-            elif self.ui.CB_SKU.currentText() == 'CM400' or 'CP300':
-                self.ui.CB_Size.addItems(['Cup', 'CupXL', 'Travel', 'Travel XL', '1/2 Carafe', 'Full Carafe'])
-
-        elif self.ui.CB_Mode.currentText() == 'Tea':
-            self.ui.CB_Size.addItems(['Cup', 'CupXL', 'Travel', 'Travel XL', '1/2 Carafe', 'Full Carafe'])
-
-        elif self.ui.CB_Mode.currentText() == 'K-Cup':
-            self.ui.CB_Size.addItems(['6oz', '8oz', '10oz', '12oz'])
-
-        elif self.ui.CB_Mode.currentText() == 'Hot Water':
-            self.ui.CB_Size.addItems(
-                ['Cup', 'Cup XL', 'Travel', 'Travel XL', '1/2 Carafe', '3/4 Carafe', 'Full Carafe'])
-
-        elif self.ui.CB_Mode.currentText() == 'Clean':
-            self.ui.CB_Size.addItem('Full Carafe')
-
-    def update_kcup_size_combo(self):
-        if self.ui.CB_Mode.currentText() == 'K-Cup':
-
-            if self.ui.CB_Style.currentText() == 'Classic' or 'Over Ice':
-                self.ui.CB_Size.addItems(['6oz', '8oz', '10oz', '12oz'])
-            elif self.ui.CB_Style.currentText() == 'Rich':
-                self.ui.CB_Size.addItems(['5oz', '7oz', '9oz', '11oz'])
-            elif self.ui.CB_Style.currentText() == 'Specialty':
-                self.ui.CB_Size.addItem('4oz')
-
+    # Update styles based on SKU and Mode
     def update_style_combo(self):
         self.ui.CB_Style.clear()
 
-        # CFP300
-        if self.ui.CB_SKU.currentText() == 'CFP300':
-            # Coffee
-            if self.ui.CB_Mode.currentText() == 'Coffee':
-                if self.ui.CB_Size.currentText() == 'Cup':
-                    self.ui.CB_Style.addItems(['Classic', 'Rich', 'Over Ice', 'Specialty'])
-                else:
-                    self.ui.CB_Style.addItems(['Classic', 'Rich', 'Over Ice'])
+        # Coffee
+        if self.ui.CB_Mode.currentText() == "Coffee":
+            if self.ui.CB_SKU.currentText() == "CFP300":
+                self.ui.CB_Style.addItems(
+                    ['Classic', 'Rich', 'Over Ice', 'Specialty'])
+            elif self.ui.CB_SKU.currentText() == "CFP200":
+                self.ui.CB_Style.addItems(['Classic', 'Over Ice', 'Rich'])
+            elif self.ui.CB_SKU.currentText() == "CM400":
+                self.ui.CB_Style.addItems(['Classic', 'Over Ice', 'Rich', 'Specialty'])
 
-            # K-Cup
-            elif self.ui.CB_Mode.currentText() == 'K-Cup':
+        # K-cup
+        elif self.ui.CB_Mode.currentText() == "K-Cup":
+            if self.ui.CB_SKU.currentText() == "CFP300":
                 self.ui.CB_Style.addItems(['Classic', 'Rich', 'Over Ice', 'Specialty'])
+            elif self.ui.CB_SKU.currentText() == "CFP200":
+                self.ui.CB_Style.addItems(['Classic', 'Rich', 'Over Ice'])
 
-            # Hot Water
-            elif self.ui.CB_Mode.currentText() == 'Hot Water':
-                self.ui.CB_Style.addItems(Style_list[4:6])
-
-        # CM400
-        if self.ui.CB_SKU.currentText() == 'CM400':
-            # Coffee
-            if self.ui.CB_Mode.currentText() == 'Coffee':
-                if self.ui.CB_Size.currentText() == Size_list[0]:
-                    self.ui.CB_Style.addItems(Style_list[0:4])
-
-                else:
-                    self.ui.CB_Style.addItems(Style_list[0:3])
-
-        if self.ui.CB_SKU.currentText() == 'CP300':
-            # Coffee
-            if self.ui.CB_Mode.currentText() == 'Coffee':
-                if self.ui.CB_Size.currentText() == Size_list[0]:
-                    self.ui.CB_Style.addItems(Style_list[0:4])
-
-                else:
-                    self.ui.CB_Style.addItems(Style_list[0:3])
-
-            # Tea
-            if self.ui.CB_Mode.currentText() == 'Tea':
-                self.ui.CB_Style.addItems(Style_list[6:11])
+        # Hot water
+        elif self.ui.CB_Mode.currentText() == "Hot Water":
+            self.ui.CB_Style.addItems(
+                ['Hot', 'Boil'])
 
         # Clean
-        if self.ui.CB_Mode.currentText() == 'Clean':
-            self.ui.CB_Style.clear()
+        elif self.ui.CB_Mode.currentText() == "Clean":
+            self.ui.CB_Size.addItems(['Full Carafe'])
+
+    # Update sizes based on SKU, mode and style
+    def update_size_combo(self):
+        self.ui.CB_Size.clear()
+        style = self.ui.CB_Style.currentText()
+
+        # CFP300 and CFP200
+        if self.ui.CB_SKU.currentText() == "CFP300" or "CFP200":
+            # Coffee
+            if self.ui.CB_Mode.currentText() == "Coffee":
+                if style == "Classic" or "Over Ice":
+                    # print("Classic: Classic")
+                    self.ui.CB_Size.addItems(['8oz', '10oz', '12oz', '14oz', '18oz', '28oz', '35oz', '45oz', '56oz'])
+                if style == "Rich":
+                    self.ui.CB_Size.clear()
+                    # print("Rich: RICH")
+                    self.ui.CB_Size.addItems(['7oz', '10oz', '13oz', '16oz', '25oz', '32oz', '40oz', '49oz'])
+                if style == "Specialty":
+                    # print("Specialty: Specialty")
+                    self.ui.CB_Size.clear()
+                    self.ui.CB_Size.addItems(['4oz'])
+            # K-Cup
+            elif self.ui.CB_Mode.currentText() == "K-Cup":
+                if self.ui.CB_Style.currentText() == "Classic" or "Over Ice":
+                    self.ui.CB_Size.clear()
+                    self.ui.CB_Size.addItems(['6oz', '8oz', '10oz', '12oz'])
+                if self.ui.CB_Style.currentText() == "Rich":
+                    self.ui.CB_Size.clear()
+                    self.ui.CB_Size.addItems(['5oz', '7oz', '9oz', '11oz'])
+                if self.ui.CB_Style.currentText() == "Specialty":
+                    self.ui.CB_Size.clear()
+                    self.ui.CB_Size.addItem('4oz')
+
+            # Hot Water
+            elif self.ui.CB_Mode.currentText() == "Hot Water":
+                if self.ui.CB_Style.currentText() == 'Hot' or 'Boil':
+                    self.ui.CB_Size.addItems(
+                        ['4oz', '6oz', '8oz', '10oz', '12oz', '16oz', '32oz', '40oz', '50oz', '57oz'])
+            # clean
+            elif self.ui.CB_Mode.currentText() == "Clean":
+                self.ui.CB_Size.clear()
+                self.ui.CB_Size.addItems(["Full Carafe"])
+
+        # CM400
+        elif self.ui.CB_SKU.currentText() == "CM400":
+            # Coffee
+            if self.ui.CB_Mode.currentText() == "Coffee":
+                if self.ui.CB_Style.currentText() == "Classic" or "Rich" or "Over Ice":
+                    self.ui.CB_Size.clear()
+                    self.ui.CB_Size.addItems(['Cup', 'Cup XL', 'Travel', 'Travel XL', 'Half Carafe', 'Full Carafe'])
+
+                elif self.ui.CB_Style.currentText() == "Specialty":
+                    self.ui.CB_Size.clear()
+                    self.ui.CB_Size.addItem('Cup')
+
+            elif self.ui.CB_Mode.currentText() == "Clean":
+                self.ui.CB_Size.clear()
+                self.ui.CB_Size.addItems(["Full Carafe"])
 
     # Serial connections
     def arduino_connect(self):
@@ -468,7 +472,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QMessageBox.critical(self, "Error", str(e))
 
     # File directory and Filename creation
-    def file_manager(self):
+    def file_manager(self, station, unit, current_cycle):
         # SKU and station info
         global filename_extra, summary_file, filename
         file_dir = data_dir + '\\' + "{} {} Station {}".format(self.ui.CB_SKU.currentText(),
@@ -504,7 +508,7 @@ class MainWindow(QtWidgets.QMainWindow):
         print('Sub File directory: {}'.format(subfile_dir))
         print('Filename: {}'.format(filename))
         print('Summary Filename: {}'.format(summary_file))
-        a = DataLogging()
+
         b = DataLogging()
 
         b.summary_file_log("Hello")
@@ -512,6 +516,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # Data Import - Get's the initial values from the Test parameters in the GUI
     def test_param_import(self):
+        sku = self.ui.CB_SKU.currentText()
+        build = self.ui.CB_Build.currentText()
         station = self.ui.DSB_Station.value()
         unit = self.ui.DSB_Unit.value()
         mode = self.ui.CB_Mode.currentText()
@@ -527,15 +533,17 @@ class MainWindow(QtWidgets.QMainWindow):
         max_brew_time = self.ui.DSB_MaxBrewTime.value()
         filename_extra = self.ui.LE_Filename.text()
         receiver_email = self.ui.LE_Email.text().split(",")
+        current_cycle = start_cycle
 
         test_param = "SKU: {},Build:{},Station:{}, Unit:{}, Mode:{}, Size:{}, Style:{}, Macro:{}, Start Cycle:{}," \
                      "Current Cycle:{}, Number of cycles:{}, Auto shutoff temp.:{}C, Boiler Cool temp.:{}C, " \
                      "Vessel Cool temp:{}C, Cool time:{}min., Max Brew time:{}min., Filename Extra:{}" \
-            .format(self.ui.CB_SKU.currentText(), self.ui.CB_Build.currentText(), station, unit, mode, size, style,
+            .format(sku, build, station, unit, mode, size, style,
                     macro, start_cycle, current_cycle, number_of_cycles, auto_shutoff_temp, boiler_cool_temp,
                     vessel_cool_temp, cool_time, max_brew_time, filename_extra)
 
         logging.info(test_param)
+        self.file_manager(station, unit, current_cycle)
 
     def start_end_brew(self):
         global start_stop_flag
@@ -546,7 +554,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.GB_Aux.setEnabled(False)
             self.ui.GB_Misc.setEnabled(False)
             a = ArduinoComm()
-            a.pre_brew()
+            a.arduino_pre_brew()
 
             logging.info('Brew {} Started'.format(current_cycle))
             start_stop_flag = 1
@@ -559,9 +567,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.GB_Misc.setEnabled(True)
             start_stop_flag = 0
 
+    # Sends stop signal to the unit and the arduino to stop/disable all functions
+    def stop_everything(self):
+        QMessageBox.critical(self, "Application stopped", "Application stopped")
+        logging.info("Application stopped")
+
+    # Quit button - Close application
     def quit(self):
+        # self.stop_everything()
         logging.info('Application closed')
-        # Stop everything
         QtWidgets.qApp.closeAllWindows()
 
 
@@ -610,7 +624,7 @@ class DataLogging(object):
                         ['Brew Start time', 'Brew end time', 'Mode', 'Size', 'Style', 'Macro', 'Brew cycle',
                          'Max. Boiler temp (degC)', 'Max. Outlet temp (degC)', 'Initial weight (g)', 'Final weight (g)',
                          'Brew Volume (g)', 'Brew Volume (oz.)', 'Max. Ambient temperature (degC)',
-                         'Max. Ambient humidity'])
+                         'Max. Ambient humidity', 'Brew Status'])
                     filewriter.writerow(data)
 
         except Exception as e:
