@@ -59,12 +59,7 @@ raw_data = ' '
 summary_data = ' '
 
 SKU_list = ['CFP300', 'CFP200', 'CM400', ]
-Build_list = ['P0', 'P1', 'P2', 'P3', 'P4', 'EB0', 'EB1', 'EB2', 'MP']
-Mode_list = ['Coffee', 'K-Cup', 'Hot Water', 'Clean', 'Tea']
-Style_list = ['Classic', 'Rich', 'Over Ice', 'Specialty', 'Hot', 'Very Hot', 'Herbal', 'Black', 'Oolong', 'White',
-              'Green']
-Size_list = ['Cup', 'Cup XL', 'Travel', 'Travel XL', '1/2 Carafe', '3/4 carafe', 'Full Carafe', '6oz', '8oz', '10z',
-             '12oz']
+Build_list = ['P0', 'P1', 'P2', 'P3', 'P4', 'FOT', 'EB0', 'EB1', 'EB2', 'MP']
 
 # defaults
 brew_weight = 0  # in g
@@ -139,6 +134,48 @@ class ArduinoComm(object):
         self.threadpool = QtCore.QThreadPool()
         self.do_init = QtCore.QEvent.registerEventType()
 
+    def vessel_fan_toggle(self):
+        global vessel_fan_flag
+        try:
+            if vessel_fan_flag == 0:
+                arduino_ser.write(b'$0100&\n')
+                logging.info('Vessel fans are on')
+                vessel_fan_flag = 1
+            else:
+                logging.info('Vessel fans are off')
+                vessel_fan_flag = 0
+
+        except Exception:
+            logging.exception("Exception occurred", exc_info=True)
+
+    def unit_fan_toggle(self):
+        global unit_fan_flag
+        try:
+            if unit_fan_flag == 0:
+                arduino_ser.write(b'$0001&\n')
+                logging.info('Unit fans are on')
+                unit_fan_flag = 1
+            else:
+                logging.info('Unit fans are off')
+                unit_fan_flag = 0
+
+        except Exception:
+            logging.exception("Exception occurred", exc_info=True)
+
+    def vessel_drain_toggle(self):
+        global vessel_drain_flag
+        try:
+            if vessel_drain_flag == 0:
+                arduino_ser.write(b'$0010&\n')
+                logging.info('Vessel Draining')
+                vessel_drain_flag = 1
+            else:
+                logging.info('Vessel stopped draining')
+                vessel_drain_flag = 0
+
+        except Exception:
+            logging.exception("Exception occurred", exc_info=True)
+
     def arduino_pre_brew(self):
         # This function checks for all water float status (Reservoir, Vessel and Drain drum), power
         try:
@@ -164,45 +201,6 @@ class ArduinoComm(object):
 class AuxFunctions:
     global scale_ser, brew_weight
 
-    def vessel_fan_toggle(self):
-        global vessel_fan_flag
-        try:
-            if vessel_fan_flag == 0:
-                logging.info('Vessel fans are on')
-                vessel_fan_flag = 1
-            else:
-                logging.info('Vessel fans are off')
-                vessel_fan_flag = 0
-
-        except Exception:
-            logging.exception("Exception occurred", exc_info=True)
-
-    def unit_fan_toggle(self):
-        global unit_fan_flag
-        try:
-            if unit_fan_flag == 0:
-                logging.info('Unit fans are on')
-                unit_fan_flag = 1
-            else:
-                logging.info('Unit fans are off')
-                unit_fan_flag = 0
-
-        except Exception:
-            logging.exception("Exception occurred", exc_info=True)
-
-    def vessel_drain_toggle(self):
-        global vessel_drain_flag
-        try:
-            if vessel_drain_flag == 0:
-                logging.info('Vessel Draining')
-                vessel_drain_flag = 1
-            else:
-                logging.info('Vessel stopped draining')
-                vessel_drain_flag = 0
-
-        except Exception:
-            logging.exception("Exception occurred", exc_info=True)
-
     def scale_data(self):
         scale_output = scale_ser.readline()
         scale_output.strip()
@@ -217,9 +215,10 @@ class AuxFunctions:
             print(brew_weight)
 
 
-# CFP communication
-class CFPComm:
-    RESERVOIR_PUMP_ON = "A"
+class UnitComm:
+    # CFP communication
+    def CFPstart(self):
+        RESERVOIR_PUMP_ON = "A"
 
 
 # GUI
@@ -235,8 +234,9 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QMainWindow.__init__(self)
         super(MainWindow, self).__init__()
 
-        dir_path = os.path.dirname(os.path.realpath(__file__))
-        self.ui = uic.loadUi(dir_path + "\GUI.ui", self)
+        parent_dir = os.path.dirname(os.path.realpath(__file__))
+        ui_dir = os.path.join(parent_dir, "GUI.ui")
+        self.ui = uic.loadUi(ui_dir, self)
 
         # update comboBox
         self.ui.CB_SKU.currentIndexChanged.connect(self.update_mode_combo)
@@ -270,9 +270,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.PB_Quit.setStyleSheet(Styling.start_stop_exit_button)
 
         # Aux functions
-        self.ui.PB_VesselFans.clicked.connect(AuxFunctions.vessel_fan_toggle)
-        self.ui.PB_UnitFans.clicked.connect(AuxFunctions.unit_fan_toggle)
-        self.ui.PB_VesselDrain.clicked.connect(AuxFunctions.vessel_drain_toggle)
+        self.ui.PB_VesselFans.clicked.connect(ArduinoComm.vessel_fan_toggle)
+        self.ui.PB_UnitFans.clicked.connect(ArduinoComm.unit_fan_toggle)
+        self.ui.PB_VesselDrain.clicked.connect(ArduinoComm.vessel_drain_toggle)
 
         # Serial connections
         self.ui.PB_Arduino_Connect.clicked.connect(self.arduino_connect)
@@ -472,19 +472,19 @@ class MainWindow(QtWidgets.QMainWindow):
             QMessageBox.critical(self, "Error", str(e))
 
     # File directory and Filename creation
-    def file_manager(self, station, unit, current_cycle):
+    def file_manager(self, station, unit, current_cycle, filename_extra):
         # SKU and station info
-        global filename_extra, summary_file, filename
-        file_dir = data_dir + '\\' + "{} {} Station {}".format(self.ui.CB_SKU.currentText(),
-                                                               self.ui.CB_Build.currentText(),
-                                                               str(int((self.ui.DSB_Station.value()))))
+        global summary_file, filename
+        file_dir = os.path.join(data_dir, "{} {} Station {}".format(self.ui.CB_SKU.currentText(),
+                                                                    self.ui.CB_Build.currentText(),
+                                                                    str(int((self.ui.DSB_Station.value())))))
 
         if not os.path.exists(file_dir):
             os.makedirs(file_dir)
 
         # Macro and Unit info
-        subfile_dir = file_dir + '\\' + "#{} Macro {}".format(str(int((self.ui.DSB_Unit.value()))), str(
-            int((self.ui.DSB_Macro.value()))))
+        subfile_dir = os.path.join(file_dir, "#{} Macro {}".format(str(int((self.ui.DSB_Unit.value()))), str(
+            int((self.ui.DSB_Macro.value())))))
 
         if not os.path.exists(subfile_dir):
             os.makedirs(subfile_dir)
@@ -494,14 +494,15 @@ class MainWindow(QtWidgets.QMainWindow):
         filename_extra = re.sub(r"([^\w])", "_", filename_extra)
 
         # summary file name
-        summary_file = file_dir + '\\' + "{}_{}_Station{}_Unit{}_{}.csv".format(self.ui.CB_SKU.currentText(),
-                                                                                self.ui.CB_Build.currentText(), station,
-                                                                                unit, filename_extra)
+        summary_file = os.path.join(file_dir, "{}_{}_Station{}_Unit{}_{}.csv".format(self.ui.CB_SKU.currentText(),
+                                                                                     self.ui.CB_Build.currentText(),
+                                                                                     station, unit, filename_extra))
+
         # data file name
-        filename = subfile_dir + '\\' + "{}_{}_{}_Brew{}_{}.csv".format(self.ui.CB_Mode.currentText(),
-                                                                        self.ui.CB_Size.currentText(),
-                                                                        self.ui.CB_Style.currentText(),
-                                                                        current_cycle, filename_extra)
+        filename = os.path.join(subfile_dir, "{}_{}_{}_Brew{}_{}.csv".format(self.ui.CB_Mode.currentText(),
+                                                                             self.ui.CB_Size.currentText(),
+                                                                             self.ui.CB_Style.currentText(),
+                                                                             current_cycle, filename_extra))
 
         print('Data directory: {}'.format(data_dir))
         print('File directory: {}'.format(file_dir))
@@ -543,7 +544,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     vessel_cool_temp, cool_time, max_brew_time, filename_extra)
 
         logging.info(test_param)
-        self.file_manager(station, unit, current_cycle)
+        self.file_manager(station, unit, current_cycle, filename_extra)
 
     def start_end_brew(self):
         global start_stop_flag
@@ -658,9 +659,9 @@ if __name__ == "__main__":
 
     if sys.flags.interactive != 1:
 
-        dirpath = os.path.dirname(__file__)  # Current directory
-        data_dir = dirpath + r'\RAW'  # RAW data folder
-        log_dir = dirpath + r'\Logs'  # Log files folder
+        parent_dir = os.path.dirname(__file__)  # Current directory
+        data_dir = os.path.join(parent_dir, "RAW")  # RAW data folder
+        log_dir = os.path.join(parent_dir, "Log")  # Log files folder
 
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
@@ -668,7 +669,7 @@ if __name__ == "__main__":
             os.makedirs(log_dir)
 
         # Logging
-        log_file = log_dir + "\log" + str(time.strftime("-%m-%d-%Y--%I-%M-%S %p")) + ".log"
+        log_file = os.path.join(log_dir, "log" + str(time.strftime("-%m-%d-%Y--%I-%M-%S %p")) + ".log")
         logging.basicConfig(filename=log_file, filemode='w', level=logging.INFO,
                             format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
         logging.getLogger().addHandler(logging.StreamHandler())
@@ -678,7 +679,9 @@ if __name__ == "__main__":
         program = MainWindow()
 
         # Stylesheet
-        file = open(dirpath + r'\style\style.qss')
+        style_dir = os.path.join(parent_dir, "style")
+        style_file = os.path.join(style_dir, "style.qss")
+        file = open(style_file)
         with file:
             qss = file.read()
             app.setStyleSheet(qss)
