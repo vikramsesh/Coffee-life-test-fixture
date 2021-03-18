@@ -65,9 +65,9 @@ Build_list = ['P0', 'P1', 'P2', 'P3', 'P4', 'FOT', 'EB0', 'EB1', 'EB2', 'MP']
 brew_weight = 0  # in g
 
 # Serial ports
-arduino_ser = " "
-scale_ser = " "
-unit_ser = " "
+arduino_ser = ""
+scale_ser = ""
+unit_ser = ""
 
 # test_param = "Station: {}, Unit: {}, Mode: {}, Size: {}, Style: {}, Macro: {}, Start Cycle: {}, " \
 #              "Current Cycle: {}, Number of cycles: {}, Auto shutoff temp.: {}C, Boiler Cool temp.: {}C, " \
@@ -121,13 +121,14 @@ class Styling:
 class ArduinoComm(object):
     # Commands - Output
     RESERVOIR_PUMP_ON = "A"
-    RESERVOIR_PUMP_OFF = "B"
-    VESSEL_PUMP_ON = "C"
-    VESSEL_PUMP_OFF = "D"
-    UNIT_FANS_ON = "E"
-    UNIT_FANS_OFF = "F"
-    VESSEL_FANS_ON = "G"
-    VESSEL_FANS_OFF = "H"
+    #ESERVOIR_PUMP_OFF = "B"
+    VESSEL_PUMP_ON = b'$0010&\n'
+    #VESSEL_PUMP_OFF = "D"
+    UNIT_FANS_ON = b'$0001&\n'
+    #UNIT_FANS_OFF = "F"
+    VESSEL_FANS_ON = b'$0100&\n'
+    #VESSEL_FANS_OFF = "H"
+    POWER_OFF = b'$0000&\n'
     STOP_ALL = "X"
 
     def __init__(self):
@@ -138,12 +139,15 @@ class ArduinoComm(object):
         global vessel_fan_flag
         try:
             if vessel_fan_flag == 0:
-                arduino_ser.write(b'$0100&\n')
+                #arduino_ser.write(b'$C&\n')
+                arduino_ser.write(VESSEL_FANS_ON)
                 logging.info('Vessel fans are on')
                 vessel_fan_flag = 1
             else:
                 logging.info('Vessel fans are off')
                 vessel_fan_flag = 0
+                #arduino_ser.write(b'$C&\n')
+                arduino_ser.write(POWER_OFF)
 
         except Exception:
             logging.exception("Exception occurred", exc_info=True)
@@ -152,12 +156,16 @@ class ArduinoComm(object):
         global unit_fan_flag
         try:
             if unit_fan_flag == 0:
-                arduino_ser.write(b'$0001&\n')
+                arduino_ser.write(b'$C&\n')
+                arduino_ser.write(UNIT_FANS_ON)
                 logging.info('Unit fans are on')
                 unit_fan_flag = 1
             else:
                 logging.info('Unit fans are off')
                 unit_fan_flag = 0
+                arduino_ser.write(b'$C&\n')
+                arduino_ser.write(POWER_OFF)
+
 
         except Exception:
             logging.exception("Exception occurred", exc_info=True)
@@ -166,12 +174,16 @@ class ArduinoComm(object):
         global vessel_drain_flag
         try:
             if vessel_drain_flag == 0:
-                arduino_ser.write(b'$0010&\n')
+                #arduino_ser.write(b'$C&\n')
+                arduino_ser.write(VESSEL_PUMP_ON)
                 logging.info('Vessel Draining')
                 vessel_drain_flag = 1
             else:
                 logging.info('Vessel stopped draining')
                 vessel_drain_flag = 0
+                #arduino_ser.write(b'$C&\n')
+                arduino_ser.write(POWER_OFF)
+
 
         except Exception:
             logging.exception("Exception occurred", exc_info=True)
@@ -180,9 +192,10 @@ class ArduinoComm(object):
         # This function checks for all water float status (Reservoir, Vessel and Drain drum), power
         try:
             # arduino_ser.open()
+            
 
             t_end = time.time() + 5  # 30 seconds
-
+            arduino_ser.write(b'$1000&\n')
             while time.time() < t_end:
                 # arduino_read_serial = arduino_ser.readline()
                 # print(read_serial)
@@ -353,6 +366,9 @@ class MainWindow(QtWidgets.QMainWindow):
             elif self.ui.CB_Mode.currentText() == "K-Cup":
                 if self.ui.CB_Style.currentText() == "Classic" or "Over Ice":
                     self.ui.CB_Size.clear()
+                    
+                    
+                    
                     self.ui.CB_Size.addItems(['6oz', '8oz', '10oz', '12oz'])
                 if self.ui.CB_Style.currentText() == "Rich":
                     self.ui.CB_Size.clear()
@@ -394,16 +410,18 @@ class MainWindow(QtWidgets.QMainWindow):
         if arduino_connect_flag == 0:
             try:
                 # serial communication between Pi and Arduino
-                # arduino_ser = serial.Serial(self.ui.LE_Arduino_Port.text(), 9600)
-                # arduino_ser.open()
-                # read_serial = arduino_ser.readline()
-                # print(read_serial)
+                arduino_ser = serial.Serial(self.ui.LE_Arduino_Port.text(), 9600)
+                arduino_ser.close()
+                arduino_ser.open()
+                arduino_ser.write(b'C')
+                #read_serial = arduino_ser.readline()
+                #print(read_serial)
                 logging.info('Arduino Connected: Port ' + self.ui.LE_Arduino_Port.text())
                 self.ui.PB_Arduino_Connect.setText("Disconnect")
                 self.ui.PB_Arduino_Connect.setStyleSheet(Styling.disconnect_button)
                 arduino_connect_flag = 1
                 self.ui.GB_Aux.setEnabled(True)
-                self.ui.PB_ReservoirDrain.setEnabled(False)
+                
 
             except Exception as e:
                 self.ui.PB_Arduino_Connect.setCheckable(False)
@@ -431,7 +449,7 @@ class MainWindow(QtWidgets.QMainWindow):
             selected_SKU = self.ui.CB_SKU.currentText()
             if selected_SKU == "CFPxxx":
                 if unit_connect_flag == 0:
-                    self.ui.PB_Unit_Connect.setStyleSheet(disconnect_button)
+                    self.ui.PB_Unit_Connect.setStyleSheet(Styling.disconnect_button)
                     self.ui.PB_Unit_Connect.setText("Disconnect")
                     logging.info(selected_SKU + ' Connected')
                     unit_connect_flag = 1
@@ -440,7 +458,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.ui.GB_TestParam.setEnabled(True)
 
                 else:
-                    self.ui.PB_Unit_Connect.setStyleSheet(connect_button)
+                    self.ui.PB_Unit_Connect.setStyleSheet(Styling.connect_button)
                     self.ui.PB_Unit_Connect.setText("Connect")
                     logging.info(selected_SKU + ' Disconnected')
                     unit_connect_flag = 0
@@ -456,18 +474,18 @@ class MainWindow(QtWidgets.QMainWindow):
         global scale_connect_flag
         try:
             if scale_connect_flag == 0:
-                self.ui.PB_Scale_Connect.setStyleSheet(disconnect_button)
+                self.ui.PB_Scale_Connect.setStyleSheet(Styling.disconnect_button)
                 self.ui.PB_Scale_Connect.setText("Disconnect")
                 logging.info('Scale Connected')
                 scale_connect_flag = 1
 
             else:
-                self.ui.PB_Scale_Connect.setStyleSheet(connect_button)
+                self.ui.PB_Scale_Connect.setStyleSheet(Styling.connect_button)
                 self.ui.PB_Scale_Connect.setText("Connect")
                 logging.info('Scale Disconnected')
                 scale_connect_flag = 0
 
-        except Exception:
+        except Exception as e:
             logging.exception("Exception occurred", exc_info=True)
             QMessageBox.critical(self, "Error", str(e))
 

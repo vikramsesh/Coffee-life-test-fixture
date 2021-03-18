@@ -84,7 +84,7 @@
               </font>
              </property>
              <property name="text">
-              <string>/dev/arduino</string>
+              <string>/dev/ttyACM0</string>
              </property>
             </widget>
            </item>
@@ -266,7 +266,7 @@
               </font>
              </property>
              <property name="text">
-              <string>/dev/scale</string>
+              <string>/dev/ttyUSB0</string>
              </property>
             </widget>
            </item>
