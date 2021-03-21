@@ -241,7 +241,7 @@ def scale_data():
     if match is not None:
         # print(match.group(3) + match.group(4))
         brew_weight = match.group(3) + match.group(4)
-        print(brew_weight)
+        print("Scale weight: {}".format(brew_weight))
         return brew_weight
 
 
@@ -255,7 +255,7 @@ class UnitComm:
 class MainWindow(QtWidgets.QMainWindow):
     global station, unit, sku, mode, size, style, macro, start_cycle, current_cycle, number_of_cycles, \
         auto_shutoff_temp, boiler_cool_temp, vessel_cool_temp, cool_time, max_brew_time, filename_extra, \
-        test_param, receiver_email, file_dir, data_dir, subfile_dir, filename, summary_file
+        receiver_email, file_dir, data_dir, subfile_dir, filename, summary_file
 
     def __init__(self):
 
@@ -278,8 +278,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.CB_SKU.addItems(SKU_list)
         self.ui.CB_Build.clear()
         self.ui.CB_Build.addItems(Build_list)
-
-        self.ui.DSB_Station.valueChanged.connect(self.test_param_import)
 
         # Quit button and shortcut
         quit_action = QtWidgets.QAction('Quit', self)
@@ -311,7 +309,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Start and Stop buttons
         self.ui.PB_Start_Stop.setEnabled(True)
-        self.ui.PB_Start_Stop.clicked.connect(self.start_end_brew)
+        self.ui.PB_Start_Stop.clicked.connect(self.test_param_import)
 
         icon = QtGui.QIcon()
         icon2 = QtGui.QIcon()
@@ -322,7 +320,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Oulling Data from GUI
         # self.updateCoolDownTime()
-        self.ui.DSB_CoolTime.valueChanged.connect(self.updateCoolDownTime)
+        self.ui.DSB_CoolTime.valueChanged.connect(self.update_cool_down_time)
 
     def update_mode_combo(self):
         self.ui.CB_Mode.clear()
@@ -433,8 +431,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 arduino_ser.close()
                 arduino_ser.open()
 
-                # read_serial = arduino_ser.readline()
-                # print(read_serial)
                 logging.info('Arduino Connected: Port ' + self.ui.LE_Arduino_Port.text())
                 self.ui.PB_Arduino_Connect.setText("Disconnect")
                 self.ui.PB_Arduino_Connect.setStyleSheet(Styling.disconnect_button)
@@ -453,58 +449,69 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.PB_Arduino_Connect.setStyleSheet(Styling.connect_button)
                 arduino_connect_flag = 0
                 self.ui.GB_Aux.setEnabled(False)
-                # arduino_ser.close()
 
             except Exception as e:
                 QMessageBox.critical(self, "Error", str(e))
                 logging.exception("Exception occurred", exc_info=True)
 
     def unit_connect(self):
-        global unit_connect_flag
-        try:
-            # Current SKU selection
-            selected_SKU = self.ui.CB_SKU.currentText()
-            if selected_SKU == "CFPxxx":
-                if unit_connect_flag == 0:
-                    self.ui.PB_Unit_Connect.setStyleSheet(Styling.disconnect_button)
+        global unit_connect_flag, unit_ser
+
+        if unit_connect_flag == 0:
+            try:
+                if self.ui.CB_SKU.currentText() == "CFP300":
                     self.ui.PB_Unit_Connect.setText("Disconnect")
-                    logging.info(selected_SKU + ' Connected')
+                    self.ui.PB_Unit_Connect.setStyleSheet(Styling.disconnect_button)
+                    logging.info(self.ui.CB_SKU.currentText() + ' Connected')
                     unit_connect_flag = 1
                     self.ui.PB_ReservoirDrain.setEnabled(True)
                     self.ui.PB_Start_Stop.setEnabled(True)
                     self.ui.GB_TestParam.setEnabled(True)
-
                 else:
-                    self.ui.PB_Unit_Connect.setStyleSheet(Styling.connect_button)
-                    self.ui.PB_Unit_Connect.setText("Connect")
-                    logging.info(selected_SKU + ' Disconnected')
-                    unit_connect_flag = 0
-                    self.ui.PB_ReservoirDrain.setEnabled(False)
-                    self.ui.PB_Start_Stop.setEnabled(False)
-                    self.ui.GB_TestParam.setEnabled(False)
+                    QMessageBox.critical(self, "Error", "Unit serial communication not configured")
+                    self.ui.PB_Unit_Connect.setCheckable(False)
 
-        except Exception as e:
-            logging.exception("Exception occurred", exc_info=True)
-            QMessageBox.critical(self, "Error", str(e))
+            except Exception as e:
+                self.ui.PB_Unit_Connect.setCheckable(False)
+                logging.exception("Exception occurred", exc_info=True)
+                QMessageBox.critical(self, "Error", str(e))
+        else:
+            try:
+                logging.info(self.ui.CB_SKU.currentText() + ' Disconnected')
+                self.ui.PB_Unit_Connect.setStyleSheet(Styling.connect_button)
+                self.ui.PB_Unit_Connect.setText("Connect")
+                unit_connect_flag = 0
+                self.ui.PB_ReservoirDrain.setEnabled(False)
+                self.ui.PB_Start_Stop.setEnabled(False)
+                self.ui.GB_TestParam.setEnabled(False)
+
+            except Exception as e:
+                logging.exception("Exception occurred", exc_info=True)
+                QMessageBox.critical(self, "Error", str(e))
 
     def scale_connect(self):
-        global scale_connect_flag
-        try:
-            if scale_connect_flag == 0:
-                self.ui.PB_Scale_Connect.setStyleSheet(Styling.disconnect_button)
+        global scale_connect_flag, scale_ser
+        if scale_connect_flag == 0:
+            try:
                 self.ui.PB_Scale_Connect.setText("Disconnect")
+                self.ui.PB_Scale_Connect.setStyleSheet(Styling.disconnect_button)
                 logging.info('Scale Connected')
                 scale_connect_flag = 1
 
-            else:
+            except Exception as e:
+                self.ui.PB_Scale_Connect.setCheckable(False)
+                logging.exception("Exception occurred", exc_info=True)
+                QMessageBox.critical(self, "Error", str(e))
+        else:
+            try:
+                logging.info('Scale Disconnected')
                 self.ui.PB_Scale_Connect.setStyleSheet(Styling.connect_button)
                 self.ui.PB_Scale_Connect.setText("Connect")
-                logging.info('Scale Disconnected')
                 scale_connect_flag = 0
 
-        except Exception as e:
-            logging.exception("Exception occurred", exc_info=True)
-            QMessageBox.critical(self, "Error", str(e))
+            except Exception as e:
+                logging.exception("Exception occurred", exc_info=True)
+                QMessageBox.critical(self, "Error", str(e))
 
     # File directory and Filename creation
     def file_manager(self, station, unit, current_cycle, filename_extra):
@@ -524,20 +531,35 @@ class MainWindow(QtWidgets.QMainWindow):
         if not os.path.exists(subfile_dir):
             os.makedirs(subfile_dir)
 
-        # Remove characters that don't follow file naming convention
-        # *Do not use the following characters: /  \: * ? " < > |
+        """ 
+        Remove characters that don't follow file naming convention
+        Do not use the following characters: / \: * ? " < > |
+        """
         filename_extra = re.sub(r"([^\w])", "_", filename_extra)
 
-        # summary file name
-        summary_file = os.path.join(file_dir, "{}_{}_Station{}_Unit{}_{}.csv".format(self.ui.CB_SKU.currentText(),
-                                                                                     self.ui.CB_Build.currentText(),
-                                                                                     station, unit, filename_extra))
+        if filename_extra == "":
+            # summary file name
+            summary_file = os.path.join(file_dir, "{}_{}_Station{}_Unit{}.csv".format(self.ui.CB_SKU.currentText(),
+                                                                                      self.ui.CB_Build.currentText(),
+                                                                                      station, unit))
 
-        # data file name
-        filename = os.path.join(subfile_dir, "{}_{}_{}_Brew{}_{}.csv".format(self.ui.CB_Mode.currentText(),
-                                                                             self.ui.CB_Size.currentText(),
-                                                                             self.ui.CB_Style.currentText(),
-                                                                             current_cycle, filename_extra))
+            # data file name
+            filename = os.path.join(subfile_dir, "{}_{}_{}_Brew{}.csv".format(self.ui.CB_Mode.currentText(),
+                                                                              self.ui.CB_Size.currentText(),
+                                                                              self.ui.CB_Style.currentText(),
+                                                                              current_cycle))
+
+        else:
+            # summary file name
+            summary_file = os.path.join(file_dir, "{}_{}_Station{}_Unit{}_{}.csv".format(self.ui.CB_SKU.currentText(),
+                                                                                         self.ui.CB_Build.currentText(),
+                                                                                         station, unit, filename_extra))
+
+            # data file name
+            filename = os.path.join(subfile_dir, "{}_{}_{}_Brew{}_{}.csv".format(self.ui.CB_Mode.currentText(),
+                                                                                 self.ui.CB_Size.currentText(),
+                                                                                 self.ui.CB_Style.currentText(),
+                                                                                 current_cycle, filename_extra))
 
         print('Data directory: {}'.format(data_dir))
         print('File directory: {}'.format(file_dir))
@@ -552,17 +574,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # Data Import - Get's the initial values from the Test parameters in the GUI
     def test_param_import(self):
-        global sku
+        global sku, current_cycle, start_cycle
         sku = self.ui.CB_SKU.currentText()
         build = self.ui.CB_Build.currentText()
-        station = self.ui.DSB_Station.value()
-        unit = self.ui.DSB_Unit.value()
+        station = int(self.ui.DSB_Station.value())
+        unit = int(self.ui.DSB_Unit.value())
         mode = self.ui.CB_Mode.currentText()
         size = self.ui.CB_Size.currentText()
         style = self.ui.CB_Style.currentText()
         macro = self.ui.DSB_Macro.value()
-        start_cycle = self.ui.DSB_StartCycle.value()
-        number_of_cycles = self.ui.DSB_CycleCount.value()
+        start_cycle = int(self.ui.DSB_StartCycle.value())
+        number_of_cycles = int(self.ui.DSB_CycleCount.value())
         auto_shutoff_temp = self.ui.DSB_AutoshutoffTemp.value()
         boiler_cool_temp = self.ui.DSB_BoilerTemp.value()
         vessel_cool_temp = self.ui.DSB_VesselTemp.value()
@@ -581,33 +603,39 @@ class MainWindow(QtWidgets.QMainWindow):
 
         logging.info(test_param)
         self.file_manager(station, unit, current_cycle, filename_extra)
+        self.start_end_brew()
 
-    def updateCoolDownTime(self):
+    def update_cool_down_time(self):
         global cool_time
         cool_time = self.ui.DSB_CoolTime.value()
         print(cool_time)
 
     def start_end_brew(self):
-        global start_stop_flag, current_cycle
+        global start_stop_flag, current_cycle, start_cycle
 
-        if start_stop_flag == 0:
-            self.ui.GB_Serial.setEnabled(False)
-            self.ui.GB_TestParam.setEnabled(False)
-            self.ui.GB_Aux.setEnabled(False)
-            self.ui.GB_Misc.setEnabled(False)
-            a = ArduinoComm()
-            a.arduino_pre_brew()
+        try:
+            if start_stop_flag == 0:
+                self.ui.GB_Serial.setEnabled(False)
+                self.ui.GB_TestParam.setEnabled(False)
+                self.ui.GB_Aux.setEnabled(False)
+                self.ui.GB_Misc.setEnabled(False)
+                a = ArduinoComm()
+                a.arduino_pre_brew()
+                print(start_cycle)
+                logging.info('Brew {} Started'.format(current_cycle))
+                start_stop_flag = 1
 
-            logging.info('Brew {} Started'.format(current_cycle))
-            start_stop_flag = 1
+            else:
+                logging.info('Brew {} Ended'.format(current_cycle))
+                self.ui.GB_Serial.setEnabled(True)
+                self.ui.GB_TestParam.setEnabled(True)
+                self.ui.GB_Aux.setEnabled(True)
+                self.ui.GB_Misc.setEnabled(True)
+                start_stop_flag = 0
 
-        else:
-            logging.info('Brew {} Ended'.format(current_cycle))
-            self.ui.GB_Serial.setEnabled(True)
-            self.ui.GB_TestParam.setEnabled(True)
-            self.ui.GB_Aux.setEnabled(True)
-            self.ui.GB_Misc.setEnabled(True)
-            start_stop_flag = 0
+        except Exception as e:
+            logging.exception("Exception occurred", exc_info=True)
+            QMessageBox.critical(self, "Error", str(e))
 
     # Sends stop signal to the unit and the arduino to stop/disable all functions
     def stop_everything(self):
