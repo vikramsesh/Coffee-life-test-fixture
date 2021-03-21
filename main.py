@@ -12,32 +12,33 @@ import sys
 import serial
 import logging
 import time
-import datetime
 import re
 import csv
 
 # GUI
 from PyQt5 import QtWidgets, QtCore, QtGui, uic
-from PyQt5.QtCore import Qt, QObject, pyqtSignal
+# from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtGui import*
+# from PyQt5.QtGui import*
 
 # email
 import smtplib
 import ssl
-from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
-from email.mime.multipart import MIMEMultipart
-import socket
+
+# from email.mime.text import MIMEText
+# from email.mime.image import MIMEImage
+# from email.mime.multipart import MIMEMultipart
+# import socket
 
 # GUI defaults
 station = 0
 unit = 0
+sku = " "
 mode = " "
 size = " "
 style = " "
 macro = 0
-start_cycle = 0
+start_cycle = 1
 current_cycle = start_cycle  # current cycle number. Will increment with each brew
 number_of_cycles = 0
 auto_shutoff_temp = 150  # in degC
@@ -58,7 +59,7 @@ summary_file = ' '
 raw_data = ' '
 summary_data = ' '
 
-SKU_list = ['CFP300', 'CFP200', 'CM400', ]
+SKU_list = ['CFP300', 'CFP200', 'CM400']
 Build_list = ['P0', 'P1', 'P2', 'P3', 'P4', 'FOT', 'EB0', 'EB1', 'EB2', 'MP']
 
 # defaults
@@ -83,6 +84,11 @@ arduino_connect_flag = 0  # Arduino disconnected
 unit_connect_flag = 0  # Unit disconnected
 scale_connect_flag = 0  # Scale disconnected
 start_stop_flag = 0  # Stopped
+
+VESSEL_PUMP_ON = b'$0010&\n'
+POWER_OFF = b'$0000&\n'
+VESSEL_FANS_ON = b'$0100&\n'
+UNIT_FANS_ON = b'$0001&\n'
 
 
 # Styling
@@ -121,46 +127,45 @@ class Styling:
 class ArduinoComm(object):
     # Commands - Output
     RESERVOIR_PUMP_ON = "A"
-    #ESERVOIR_PUMP_OFF = "B"
-    
-    #VESSEL_PUMP_OFF = "D"
-    
-    #UNIT_FANS_OFF = "F"
-    
-    #VESSEL_FANS_OFF = "H"
-    VESSEL_PUMP_ON = b'$0010&\n'
-    POWER_OFF = b'$0000&\n'
-    VESSEL_FANS_ON = b'$0100&\n'
-    UNIT_FANS_ON = b'$0001&\n'
+    # ESERVOIR_PUMP_OFF = "B"
+
+    # VESSEL_PUMP_OFF = "D"
+
+    # UNIT_FANS_OFF = "F"
+
+    # VESSEL_FANS_OFF = "H"
+
     STOP_ALL = "X"
 
     def __init__(self):
         self.threadpool = QtCore.QThreadPool()
         self.do_init = QtCore.QEvent.registerEventType()
 
-    def vessel_fan_toggle(self):
+    @staticmethod
+    def vessel_fan_toggle():
         global vessel_fan_flag
         global VESSEL_FANS_ON
         global POWER_OFF
         global cool_time
         try:
             if vessel_fan_flag == 0:
-                #arduino_ser.write(b'$C&\n')
+                # arduino_ser.write(b'$C&\n')
                 arduino_ser.write(VESSEL_FANS_ON)
                 logging.info('Vessel fans are on')
                 vessel_fan_flag = 1
             else:
                 logging.info('Vessel fans are off')
                 vessel_fan_flag = 0
-                #arduino_ser.write(b'$C&\n')
+                # arduino_ser.write(b'$C&\n')
                 arduino_ser.write(POWER_OFF)
 
         except Exception:
             logging.exception("Exception occurred", exc_info=True)
 
-    def unit_fan_toggle(self):
+    @staticmethod
+    def unit_fan_toggle():
         global unit_fan_flag
-        global POWER_OFF 
+        global POWER_OFF
         global UNIT_FANS_ON
         global cool_time
         try:
@@ -175,37 +180,36 @@ class ArduinoComm(object):
                 arduino_ser.write(b'$C&\n')
                 arduino_ser.write(POWER_OFF)
 
-
         except Exception:
             logging.exception("Exception occurred", exc_info=True)
 
-    def vessel_drain_toggle(self):
+    @staticmethod
+    def vessel_drain_toggle():
         global vessel_drain_flag
         global VESSEL_PUMP_ON
         global POWER_OFF
         global cool_time
-        
+
         try:
             if vessel_drain_flag == 0:
-                #arduino_ser.write(b'$C&\n')
+                # arduino_ser.write(b'$C&\n')
                 arduino_ser.write(VESSEL_PUMP_ON)
                 logging.info('Vessel Draining')
                 vessel_drain_flag = 1
             else:
                 logging.info('Vessel stopped draining')
-                vessel_drain_flag  = 0
-                #arduino_ser.write(b'$C&\n')
+                vessel_drain_flag = 0
+                # arduino_ser.write(b'$C&\n')
                 arduino_ser.write(POWER_OFF)
-
 
         except Exception:
             logging.exception("Exception occurred", exc_info=True)
 
-    def arduino_pre_brew(self):
+    @staticmethod
+    def arduino_pre_brew():
         # This function checks for all water float status (Reservoir, Vessel and Drain drum), power
         try:
             # arduino_ser.open()
-            
 
             t_end = time.time() + 5  # 30 seconds
             arduino_ser.write(b'$1000&\n')
@@ -215,41 +219,41 @@ class ArduinoComm(object):
                 print(time.time())
             logging.info("Pre-brew process has begun")
 
-        except Exception as e:
+        except Exception:
             logging.exception("Exception occurred", exc_info=True)
-            email_Send(e)
 
-    def send_command(self):
-        arduino_ser.write(STOP_ALL)
+    @staticmethod
+    def send_command():
+        global POWER_OFF
+        arduino_ser.write(POWER_OFF)
 
 
-# Aux functions - Unit and vessel cooling fans, Vessel Drain pump
-class AuxFunctions:
+# Weight information from the scale
+def scale_data():
     global scale_ser, brew_weight
+    scale_output = scale_ser.readline()
+    scale_output.strip()
+    y = scale_output.decode("utf-8", "replace")
+    scale_pattern = r"([\w]+)(,)([\+|-])([\d\.]+)(\s+)([\w]+)"
 
-    def scale_data(self):
-        scale_output = scale_ser.readline()
-        scale_output.strip()
-        y = scale_output.decode("utf-8", "replace")
-        scale_pattern = r"([\w]+)(,)([\+|-])([\d\.]+)(\s+)([\w]+)"
+    match = re.match(scale_pattern, y)
 
-        match = re.match(scale_pattern, y)
-
-        if match is not None:
-            # print(match.group(3) + match.group(4))
-            brew_weight = match.group(3) + match.group(4)
-            print(brew_weight)
+    if match is not None:
+        # print(match.group(3) + match.group(4))
+        brew_weight = match.group(3) + match.group(4)
+        print(brew_weight)
+        return brew_weight
 
 
 class UnitComm:
     # CFP communication
-    def CFPstart(self):
-        RESERVOIR_PUMP_ON = "A"
+    if sku == "CFP300":
+        pass
 
 
 # GUI
 class MainWindow(QtWidgets.QMainWindow):
-    global station, unit, mode, size, style, macro, start_cycle, current_cycle, number_of_cycles, \
+    global station, unit, sku, mode, size, style, macro, start_cycle, current_cycle, number_of_cycles, \
         auto_shutoff_temp, boiler_cool_temp, vessel_cool_temp, cool_time, max_brew_time, filename_extra, \
         test_param, receiver_email, file_dir, data_dir, subfile_dir, filename, summary_file
 
@@ -260,7 +264,7 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QMainWindow.__init__(self)
         super(MainWindow, self).__init__()
 
-        parent_dir = os.path.dirname(os.path.realpath(__file__))
+        # parent_dir = os.path.dirname(os.path.realpath(__file__))
         ui_dir = os.path.join(parent_dir, "GUI.ui")
         self.ui = uic.loadUi(ui_dir, self)
 
@@ -280,7 +284,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Quit button and shortcut
         quit_action = QtWidgets.QAction('Quit', self)
         quit_action.setShortcuts(['Ctrl+Q', 'Ctrl+W'])
-        quit_action.triggered.connect(QtWidgets.qApp.closeAllWindows)
+        quit_action.triggered.connect(self.quit)
         self.addAction(quit_action)
         self.ui.PB_Quit.clicked.connect(self.quit)
 
@@ -315,9 +319,9 @@ class MainWindow(QtWidgets.QMainWindow):
         icon2.addPixmap(QtGui.QPixmap("icon/disconnect.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
         icon.addPixmap(QtGui.QPixmap("icon/connect.png"), QtGui.QIcon.Selected, QtGui.QIcon.Off)
         icon2.addPixmap(QtGui.QPixmap("icon/disconnect.png"), QtGui.QIcon.Selected, QtGui.QIcon.On)
-        
-        #Oulling Data from GUI 
-        #self.updateCoolDownTime()
+
+        # Oulling Data from GUI
+        # self.updateCoolDownTime()
         self.ui.DSB_CoolTime.valueChanged.connect(self.updateCoolDownTime)
 
     def update_mode_combo(self):
@@ -383,9 +387,7 @@ class MainWindow(QtWidgets.QMainWindow):
             elif self.ui.CB_Mode.currentText() == "K-Cup":
                 if self.ui.CB_Style.currentText() == "Classic" or "Over Ice":
                     self.ui.CB_Size.clear()
-                    
-                    
-                    
+
                     self.ui.CB_Size.addItems(['6oz', '8oz', '10oz', '12oz'])
                 if self.ui.CB_Style.currentText() == "Rich":
                     self.ui.CB_Size.clear()
@@ -430,21 +432,19 @@ class MainWindow(QtWidgets.QMainWindow):
                 arduino_ser = serial.Serial(self.ui.LE_Arduino_Port.text(), 9600)
                 arduino_ser.close()
                 arduino_ser.open()
-            
-                #read_serial = arduino_ser.readline()
-                #print(read_serial)
+
+                # read_serial = arduino_ser.readline()
+                # print(read_serial)
                 logging.info('Arduino Connected: Port ' + self.ui.LE_Arduino_Port.text())
                 self.ui.PB_Arduino_Connect.setText("Disconnect")
                 self.ui.PB_Arduino_Connect.setStyleSheet(Styling.disconnect_button)
                 arduino_connect_flag = 1
                 self.ui.GB_Aux.setEnabled(True)
-                
 
             except Exception as e:
                 self.ui.PB_Arduino_Connect.setCheckable(False)
                 QMessageBox.critical(self, "Error", str(e))
                 logging.exception("Exception occurred", exc_info=True)
-                email_Send(e)
 
         else:
             try:
@@ -483,7 +483,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.ui.PB_Start_Stop.setEnabled(False)
                     self.ui.GB_TestParam.setEnabled(False)
 
-        except Exception:
+        except Exception as e:
             logging.exception("Exception occurred", exc_info=True)
             QMessageBox.critical(self, "Error", str(e))
 
@@ -552,6 +552,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # Data Import - Get's the initial values from the Test parameters in the GUI
     def test_param_import(self):
+        global sku
         sku = self.ui.CB_SKU.currentText()
         build = self.ui.CB_Build.currentText()
         station = self.ui.DSB_Station.value()
@@ -580,16 +581,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         logging.info(test_param)
         self.file_manager(station, unit, current_cycle, filename_extra)
-    
+
     def updateCoolDownTime(self):
         global cool_time
         cool_time = self.ui.DSB_CoolTime.value()
         print(cool_time)
-        
-        
 
     def start_end_brew(self):
-        global start_stop_flag
+        global start_stop_flag, current_cycle
 
         if start_stop_flag == 0:
             self.ui.GB_Serial.setEnabled(False)
@@ -616,7 +615,8 @@ class MainWindow(QtWidgets.QMainWindow):
         logging.info("Application stopped")
 
     # Quit button - Close application
-    def quit(self):
+    @staticmethod
+    def quit():
         # self.stop_everything()
         logging.info('Application closed')
         QtWidgets.qApp.closeAllWindows()
@@ -624,7 +624,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
 # Data logging
 class DataLogging(object):
-    def raw_file_log(self, data):
+    @staticmethod
+    def raw_file_log(data):
         global filename, filename_extra
         try:
             print(filename)
@@ -644,10 +645,11 @@ class DataLogging(object):
                                          '3 cup temp', '5 cup temp', '7 cup temp', 'Brew weight', 'Error code'])
                     filewriter.writerow(data)
 
-        except Exception as e:
+        except Exception:
             logging.exception("Exception occurred", exc_info=True)
 
-    def summary_file_log(self, data):
+    @staticmethod
+    def summary_file_log(data):
         global summary_file, filename_extra
         try:
             print(summary_file)
@@ -670,12 +672,12 @@ class DataLogging(object):
                          'Max. Ambient humidity', 'Brew Status'])
                     filewriter.writerow(data)
 
-        except Exception as e:
+        except Exception:
             logging.exception("Exception occurred", exc_info=True)
 
 
 # Email
-def email_Send(email_message):
+def email_send(email_message):
     try:
         port = 465  # For SSL
         smtp_server = "smtp.gmail.com"
@@ -693,7 +695,7 @@ def email_Send(email_message):
         print("1. Program Stopped - Keyboard Interrupt")
         sys.exit(1)
 
-    except Exception as e:
+    except Exception:
         logging.exception("Exception occurred", exc_info=True)
 
 
