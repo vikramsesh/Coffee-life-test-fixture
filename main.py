@@ -20,7 +20,7 @@ import csv
 from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtGui import *
+from PyQt5.QtGui import*
 
 # email
 import smtplib
@@ -122,13 +122,16 @@ class ArduinoComm(object):
     # Commands - Output
     RESERVOIR_PUMP_ON = "A"
     #ESERVOIR_PUMP_OFF = "B"
-    VESSEL_PUMP_ON = b'$0010&\n'
+    
     #VESSEL_PUMP_OFF = "D"
-    UNIT_FANS_ON = b'$0001&\n'
+    
     #UNIT_FANS_OFF = "F"
-    VESSEL_FANS_ON = b'$0100&\n'
+    
     #VESSEL_FANS_OFF = "H"
+    VESSEL_PUMP_ON = b'$0010&\n'
     POWER_OFF = b'$0000&\n'
+    VESSEL_FANS_ON = b'$0100&\n'
+    UNIT_FANS_ON = b'$0001&\n'
     STOP_ALL = "X"
 
     def __init__(self):
@@ -137,6 +140,9 @@ class ArduinoComm(object):
 
     def vessel_fan_toggle(self):
         global vessel_fan_flag
+        global VESSEL_FANS_ON
+        global POWER_OFF
+        global cool_time
         try:
             if vessel_fan_flag == 0:
                 #arduino_ser.write(b'$C&\n')
@@ -154,6 +160,9 @@ class ArduinoComm(object):
 
     def unit_fan_toggle(self):
         global unit_fan_flag
+        global POWER_OFF 
+        global UNIT_FANS_ON
+        global cool_time
         try:
             if unit_fan_flag == 0:
                 arduino_ser.write(b'$C&\n')
@@ -172,6 +181,10 @@ class ArduinoComm(object):
 
     def vessel_drain_toggle(self):
         global vessel_drain_flag
+        global VESSEL_PUMP_ON
+        global POWER_OFF
+        global cool_time
+        
         try:
             if vessel_drain_flag == 0:
                 #arduino_ser.write(b'$C&\n')
@@ -180,7 +193,7 @@ class ArduinoComm(object):
                 vessel_drain_flag = 1
             else:
                 logging.info('Vessel stopped draining')
-                vessel_drain_flag = 0
+                vessel_drain_flag  = 0
                 #arduino_ser.write(b'$C&\n')
                 arduino_ser.write(POWER_OFF)
 
@@ -302,6 +315,10 @@ class MainWindow(QtWidgets.QMainWindow):
         icon2.addPixmap(QtGui.QPixmap("icon/disconnect.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
         icon.addPixmap(QtGui.QPixmap("icon/connect.png"), QtGui.QIcon.Selected, QtGui.QIcon.Off)
         icon2.addPixmap(QtGui.QPixmap("icon/disconnect.png"), QtGui.QIcon.Selected, QtGui.QIcon.On)
+        
+        #Oulling Data from GUI 
+        #self.updateCoolDownTime()
+        self.ui.DSB_CoolTime.valueChanged.connect(self.updateCoolDownTime)
 
     def update_mode_combo(self):
         self.ui.CB_Mode.clear()
@@ -413,7 +430,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 arduino_ser = serial.Serial(self.ui.LE_Arduino_Port.text(), 9600)
                 arduino_ser.close()
                 arduino_ser.open()
-                arduino_ser.write(b'C')
+            
                 #read_serial = arduino_ser.readline()
                 #print(read_serial)
                 logging.info('Arduino Connected: Port ' + self.ui.LE_Arduino_Port.text())
@@ -563,6 +580,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         logging.info(test_param)
         self.file_manager(station, unit, current_cycle, filename_extra)
+    
+    def updateCoolDownTime(self):
+        global cool_time
+        cool_time = self.ui.DSB_CoolTime.value()
+        print(cool_time)
+        
+        
 
     def start_end_brew(self):
         global start_stop_flag
