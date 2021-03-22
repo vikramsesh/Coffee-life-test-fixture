@@ -60,7 +60,7 @@ raw_data = ' '
 summary_data = ' '
 
 SKU_list = ['CFP300', 'CFP200', 'CM400']
-Build_list = ['P0', 'P1', 'P2', 'P3', 'P4', 'FOT', 'EB0', 'EB1', 'EB2', 'MP']
+Build_list = ['P0', 'P1', 'P2', 'P3', 'P4', 'FOT', 'EB0', 'EB1', 'EB1.5', 'EB2', 'MP']
 
 # defaults
 brew_weight = 0  # in g
